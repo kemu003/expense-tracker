@@ -24,19 +24,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check if user is already logged in
     const token = localStorage.getItem('access_token');
-    if (token) {
-      apiClient.setToken(token);
-      // Try to fetch user info from a profile endpoint
-      // For now, we'll just set a basic user object based on stored email
-      const email = localStorage.getItem('user_email');
-      const name = localStorage.getItem('user_name');
-      if (email) {
-        setUser({
-          id: parseInt(localStorage.getItem('user_id') || '0'),
-          email,
-          first_name: name || '',
-        });
-      }
+    const email = localStorage.getItem('user_email');
+    const name = localStorage.getItem('user_name');
+    const id = localStorage.getItem('user_id');
+
+    if (token && email) {
+      setUser({
+        id: parseInt(id || '0'),
+        email,
+        first_name: name || '',
+      });
     }
     setLoading(false);
   }, []);
@@ -46,17 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await apiClient.register(email, password, name);
       // After registration, log them in
       const response = await apiClient.login(email, password);
-      apiClient.setToken(response.access);
+      localStorage.setItem('access_token', response.access);
+      localStorage.setItem('refresh_token', response.refresh);
       localStorage.setItem('user_email', email);
       localStorage.setItem('user_name', name);
-      localStorage.setItem('refresh_token', response.refresh);
-      
+      // Note: We don't have user ID from login, but we can set a temporary one
+      localStorage.setItem('user_id', '1');
+
       setUser({
-        id: 0,
+        id: 1,
         email,
         first_name: name,
       });
-      
+
       return { error: null };
     } catch (error) {
       return { error: (error as Error).message };
@@ -66,16 +65,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn = async (email: string, password: string) => {
     try {
       const response = await apiClient.login(email, password);
-      apiClient.setToken(response.access);
-      localStorage.setItem('user_email', email);
+      localStorage.setItem('access_token', response.access);
       localStorage.setItem('refresh_token', response.refresh);
-      
+      localStorage.setItem('user_email', email);
+      // For login, we don't get user details, so we'll use email as name for now
+      localStorage.setItem('user_name', email.split('@')[0]);
+      localStorage.setItem('user_id', '1'); // Temporary ID
+
       setUser({
-        id: 0,
+        id: 1,
         email,
         first_name: email.split('@')[0],
       });
-      
+
       return { error: null };
     } catch (error) {
       return { error: (error as Error).message };
@@ -83,7 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    apiClient.setToken(null);
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_email');
     localStorage.removeItem('user_name');
     localStorage.removeItem('user_id');

@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, Zap } from 'lucide-react';
 import { Expense, Income, CATEGORY_COLORS, Category } from '../lib/supabase';
 import { format, startOfWeek, startOfMonth } from '../utils/dates';
+import { useDashboardStats } from '../hooks/useDashboard';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface DashboardProps {
   expenses: Expense[];
@@ -49,28 +51,43 @@ function fmt(n: number) {
 }
 
 export default function Dashboard({ expenses, income, onNavigate }: DashboardProps) {
+  const { stats: apiStats, loading: statsLoading } = useDashboardStats();
+  const { categoryBreakdown, loading: analyticsLoading } = useAnalytics();
+
   const today = new Date().toISOString().split('T')[0];
   const weekStart = startOfWeek();
   const monthStart = startOfMonth();
 
-  const stats = useMemo(() => {
-    const todayExp = expenses.filter(e => e.date === today).reduce((s, e) => s + e.amount, 0);
-    const weekExp = expenses.filter(e => e.date >= weekStart).reduce((s, e) => s + e.amount, 0);
-    const monthExp = expenses.filter(e => e.date >= monthStart).reduce((s, e) => s + e.amount, 0);
-    const monthInc = income.filter(e => e.date >= monthStart).reduce((s, e) => s + e.amount, 0);
+  // Fallback to local calculations if API fails
+  const localStats = useMemo(() => {
+    if (apiStats) return apiStats;
+    const todayExp = expenses.filter(e => e.date === today).reduce((s, e) => s + parseFloat(e.amount), 0);
+    const weekExp = expenses.filter(e => e.date >= weekStart).reduce((s, e) => s + parseFloat(e.amount), 0);
+    const monthExp = expenses.filter(e => e.date >= monthStart).reduce((s, e) => s + parseFloat(e.amount), 0);
+    const monthInc = income.filter(e => e.date >= monthStart).reduce((s, e) => s + parseFloat(e.amount), 0);
     const balance = monthInc - monthExp;
-    return { todayExp, weekExp, monthExp, monthInc, balance };
-  }, [expenses, income, today, weekStart, monthStart]);
+    return {
+      today_expenses: todayExp.toFixed(2),
+      week_expenses: weekExp.toFixed(2),
+      month_expenses: monthExp.toFixed(2),
+      month_income: monthInc.toFixed(2),
+      balance: balance.toFixed(2)
+    };
+  }, [expenses, income, today, weekStart, monthStart, apiStats]);
 
   const recentExpenses = expenses.slice(0, 10);
 
   const categoryTotals = useMemo(() => {
+    if (categoryBreakdown.length > 0) {
+      return categoryBreakdown.map(item => [item.label, parseFloat(item.value)] as [string, number]);
+    }
+    // Fallback to local calculation
     const map: Record<string, number> = {};
     expenses.filter(e => e.date >= monthStart).forEach(e => {
-      map[e.category] = (map[e.category] ?? 0) + e.amount;
+      map[e.category] = (map[e.category] ?? 0) + parseFloat(e.amount);
     });
     return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [expenses, monthStart]);
+  }, [expenses, monthStart, categoryBreakdown]);
 
   const maxCategory = categoryTotals[0]?.[1] ?? 1;
 
@@ -90,16 +107,16 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard label="Today" value={fmt(stats.todayExp)} icon={Calendar} color="bg-blue-500" sub="expenses today" trend="neutral" />
-        <StatCard label="This Week" value={fmt(stats.weekExp)} icon={TrendingDown} color="bg-orange-500" sub="weekly spend" trend="neutral" />
-        <StatCard label="This Month" value={fmt(stats.monthExp)} icon={DollarSign} color="bg-red-500" sub="monthly expenses" trend="neutral" />
+        <StatCard label="Today" value={fmt(parseFloat(localStats.today_expenses))} icon={Calendar} color="bg-blue-500" sub="expenses today" trend="neutral" />
+        <StatCard label="This Week" value={fmt(parseFloat(localStats.week_expenses))} icon={TrendingDown} color="bg-orange-500" sub="weekly spend" trend="neutral" />
+        <StatCard label="This Month" value={fmt(parseFloat(localStats.month_expenses))} icon={DollarSign} color="bg-red-500" sub="monthly expenses" trend="neutral" />
         <StatCard
           label="Balance"
-          value={fmt(stats.balance)}
+          value={fmt(parseFloat(localStats.balance))}
           icon={TrendingUp}
-          color={stats.balance >= 0 ? 'bg-green-500' : 'bg-red-500'}
-          sub={`Income: ${fmt(stats.monthInc)}`}
-          trend={stats.balance >= 0 ? 'up' : 'down'}
+          color={parseFloat(localStats.balance) >= 0 ? 'bg-green-500' : 'bg-red-500'}
+          sub={`Income: ${fmt(parseFloat(localStats.month_income))}`}
+          trend={parseFloat(localStats.balance) >= 0 ? 'up' : 'down'}
         />
       </div>
 

@@ -8,12 +8,12 @@ export function useIncome() {
   const [income, setIncome] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchIncome = useCallback(async () => {
+  const fetchIncome = useCallback(async (params?: { date_from?: string; date_to?: string; search?: string }) => {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await apiClient.getIncome();
-      setIncome((data as Income[]) ?? []);
+      const data = await apiClient.getIncome(params);
+      setIncome(data || []);
     } catch (error) {
       console.error('Failed to fetch income:', error);
       setIncome([]);
@@ -29,7 +29,7 @@ export function useIncome() {
     if (!user) return { error: 'Not authenticated' };
     try {
       await apiClient.createIncome({
-        amount: parseFloat(String(entry.amount)),
+        amount: entry.amount,
         source: entry.source,
         date: entry.date,
         notes: entry.notes,
@@ -41,15 +41,15 @@ export function useIncome() {
     }
   };
 
-  const updateIncome = async (id: string, updates: Partial<Omit<Income, 'id' | 'user_id' | 'created_at'>>) => {
+  const updateIncome = async (id: number, updates: Partial<Omit<Income, 'id' | 'user_id' | 'created_at'>>) => {
     try {
       const updateData: any = {};
-      if (updates.amount) updateData.amount = parseFloat(String(updates.amount));
+      if (updates.amount) updateData.amount = updates.amount;
       if (updates.source) updateData.source = updates.source;
       if (updates.date) updateData.date = updates.date;
       if (updates.notes) updateData.notes = updates.notes;
-      
-      await apiClient.updateIncome(parseInt(id), updateData);
+
+      await apiClient.updateIncome(id, updateData);
       await fetchIncome();
       return { error: null };
     } catch (error) {
@@ -57,9 +57,9 @@ export function useIncome() {
     }
   };
 
-  const deleteIncome = async (id: string) => {
+  const deleteIncome = async (id: number) => {
     try {
-      await apiClient.deleteIncome(parseInt(id));
+      await apiClient.deleteIncome(id);
       setIncome(prev => prev.filter(e => e.id !== id));
       return { error: null };
     } catch (error) {

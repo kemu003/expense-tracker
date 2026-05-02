@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-http://127.0.0.1:8000/api/
+https://expense-trackerbackend-im6h.onrender.com/api/
 ```
 
 ## Headers

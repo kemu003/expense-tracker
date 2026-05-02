@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Expense, Income, CATEGORY_COLORS, Category } from '../lib/supabase';
 import { last6Months, monthLabel, startOfMonth } from '../utils/dates';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 interface AnalyticsPageProps {
   expenses: Expense[];
@@ -12,13 +13,24 @@ function fmt(n: number) {
 }
 
 export default function AnalyticsPage({ expenses, income }: AnalyticsPageProps) {
+  const { categoryBreakdown, monthlyTrends, loading } = useAnalytics();
+
   const months = last6Months();
   const monthStart = startOfMonth();
 
   const categoryData = useMemo(() => {
+    if (categoryBreakdown.length > 0) {
+      return categoryBreakdown.map(item => ({
+        label: item.label,
+        value: parseFloat(item.value),
+        color: CATEGORY_COLORS[item.label as Category] ?? '#94a3b8',
+        percentage: item.percentage,
+      }));
+    }
+    // Fallback to local calculation
     const map: Record<string, number> = {};
     expenses.filter(e => e.date >= monthStart).forEach(e => {
-      map[e.category] = (map[e.category] ?? 0) + e.amount;
+      map[e.category] = (map[e.category] ?? 0) + parseFloat(e.amount);
     });
     return Object.entries(map)
       .sort((a, b) => b[1] - a[1])
@@ -26,18 +38,26 @@ export default function AnalyticsPage({ expenses, income }: AnalyticsPageProps) 
         label,
         value,
         color: CATEGORY_COLORS[label as Category] ?? '#94a3b8',
+        percentage: 0, // Will be calculated below
       }));
-  }, [expenses, monthStart]);
+  }, [expenses, monthStart, categoryBreakdown]);
 
   const { expenseData, incomeData } = useMemo(() => {
+    if (monthlyTrends) {
+      return {
+        expenseData: monthlyTrends.expenses,
+        incomeData: monthlyTrends.income
+      };
+    }
+    // Fallback to local calculation
     const expenseData = months.map(m =>
-      expenses.filter(e => e.date.startsWith(m)).reduce((s, e) => s + e.amount, 0)
+      expenses.filter(e => e.date.startsWith(m)).reduce((s, e) => s + parseFloat(e.amount), 0)
     );
     const incomeData = months.map(m =>
-      income.filter(e => e.date.startsWith(m)).reduce((s, e) => s + e.amount, 0)
+      income.filter(e => e.date.startsWith(m)).reduce((s, e) => s + parseFloat(e.amount), 0)
     );
     return { expenseData, incomeData };
-  }, [expenses, income, months]);
+  }, [expenses, income, months, monthlyTrends]);
 
   const totalExp = expenseData.reduce((a, b) => a + b, 0);
   const totalInc = incomeData.reduce((a, b) => a + b, 0);
@@ -82,8 +102,7 @@ export default function AnalyticsPage({ expenses, income }: AnalyticsPageProps) 
         ) : (
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {categoryData.map((d, idx) => {
-              const total = categoryData.reduce((s, x) => s + x.value, 0);
-              const pct = (d.value / total) * 100;
+              const pct = d.percentage || 0;
               return (
                 <li key={d.label} className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-200 group animate-in fade-in duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
                   <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />

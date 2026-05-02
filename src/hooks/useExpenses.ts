@@ -8,12 +8,12 @@ export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchExpenses = useCallback(async (params?: { category?: string; date_from?: string; date_to?: string; search?: string }) => {
     if (!user) return;
     setLoading(true);
     try {
-      const data = await apiClient.getExpenses();
-      setExpenses((data as Expense[]) ?? []);
+      const data = await apiClient.getExpenses(params);
+      setExpenses(data || []);
     } catch (error) {
       console.error('Failed to fetch expenses:', error);
       setExpenses([]);
@@ -30,7 +30,7 @@ export function useExpenses() {
     try {
       await apiClient.createExpense({
         title: expense.title,
-        amount: parseFloat(String(expense.amount)),
+        amount: expense.amount,
         category: expense.category,
         date: expense.date,
         notes: expense.notes,
@@ -42,16 +42,16 @@ export function useExpenses() {
     }
   };
 
-  const updateExpense = async (id: string, updates: Partial<Omit<Expense, 'id' | 'user_id' | 'created_at'>>) => {
+  const updateExpense = async (id: number, updates: Partial<Omit<Expense, 'id' | 'user_id' | 'created_at'>>) => {
     try {
       const updateData: any = {};
       if (updates.title) updateData.title = updates.title;
-      if (updates.amount) updateData.amount = parseFloat(String(updates.amount));
+      if (updates.amount) updateData.amount = updates.amount;
       if (updates.category) updateData.category = updates.category;
       if (updates.date) updateData.date = updates.date;
       if (updates.notes) updateData.notes = updates.notes;
-      
-      await apiClient.updateExpense(parseInt(id), updateData);
+
+      await apiClient.updateExpense(id, updateData);
       await fetchExpenses();
       return { error: null };
     } catch (error) {
@@ -59,9 +59,9 @@ export function useExpenses() {
     }
   };
 
-  const deleteExpense = async (id: string) => {
+  const deleteExpense = async (id: number) => {
     try {
-      await apiClient.deleteExpense(parseInt(id));
+      await apiClient.deleteExpense(id);
       setExpenses(prev => prev.filter(e => e.id !== id));
       return { error: null };
     } catch (error) {

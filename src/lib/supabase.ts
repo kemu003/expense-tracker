@@ -13,10 +13,10 @@ export const CATEGORY_COLORS: Record<Category, string> = {
 };
 
 export interface Expense {
-  id: string;
-  user_id: string;
+  id: number;
+  user_id: number;
   title: string;
-  amount: number;
+  amount: string;
   category: Category;
   date: string;
   notes: string;
@@ -24,9 +24,9 @@ export interface Expense {
 }
 
 export interface Income {
-  id: string;
-  user_id: string;
-  amount: number;
+  id: number;
+  user_id: number;
+  amount: string;
   source: string;
   date: string;
   notes: string;
@@ -34,10 +34,30 @@ export interface Income {
 }
 
 export interface Budget {
-  id: string;
-  user_id: string;
+  id: number;
+  user_id: number;
   category: Category;
   month: string;
-  amount: number;
+  amount: string;
   created_at: string;
+}
+
+export interface DashboardStats {
+  today_expenses: string;
+  week_expenses: string;
+  month_expenses: string;
+  month_income: string;
+  balance: string;
+}
+
+export interface CategoryBreakdown {
+  label: string;
+  value: string;
+  percentage: number;
+}
+
+export interface MonthlyTrends {
+  months: string[];
+  expenses: number[];
+  income: number[];
 }

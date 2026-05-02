@@ -4,20 +4,20 @@ import { Budget, CATEGORIES, Category, CATEGORY_COLORS } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Expense } from '../lib/supabase';
 import { currentMonth, monthLabel } from '../utils/dates';
-import apiClient from '../lib/api';
+import { useBudgets } from '../hooks/useBudgets';
 
 interface BudgetsPageProps {
   expenses: Expense[];
 }
 
-function fmt(n: number) {
-  return 'KSh ' + n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmt(n: number | string) {
+  const num = typeof n === 'string' ? parseFloat(n) : n;
+  return 'KSh ' + num.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function BudgetsPage({ expenses }: BudgetsPageProps) {
   const { user } = useAuth();
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { budgets, loading, addBudget, updateBudget } = useBudgets();
   const [saving, setSaving] = useState<string | null>(null);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [showForm, setShowForm] = useState(false);
@@ -26,21 +26,11 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
 
   const month = currentMonth();
 
-  const fetchBudgets = async () => {
-    if (!user) return;
-    try {
-      const data = await apiClient.getBudgets();
-      // Filter by month on the client side
-      const filtered = (data as Budget[]).filter(b => b.month === month);
-      setBudgets(filtered ?? []);
-    } catch (error) {
-      console.error('Failed to fetch budgets:', error);
-      setBudgets([]);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchBudgets(); }, [user]);
+  // Filter budgets by current month
+  const currentMonthBudgets = useMemo(() =>
+    budgets.filter(b => b.month === month),
+    [budgets, month]
+  );
 
   const monthExpenses = useMemo(() =>
     expenses.filter(e => e.date.startsWith(month)),
@@ -49,7 +39,7 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
 
   const spentByCategory = useMemo(() => {
     const map: Record<string, number> = {};
-    monthExpenses.forEach(e => { map[e.category] = (map[e.category] ?? 0) + e.amount; });
+    monthExpenses.forEach(e => { map[e.category] = (map[e.category] ?? 0) + parseFloat(e.amount); });
     return map;
   }, [monthExpenses]);
 
@@ -58,9 +48,10 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
     if (isNaN(val) || val <= 0) return;
     setSaving(budget.id);
     try {
-      await apiClient.updateBudget(parseInt(budget.id), { amount: val });
-      await fetchBudgets();
-      setEditValues(prev => { const next = { ...prev }; delete next[budget.id]; return next; });
+      const result = await updateBudget(budget.id, { amount: val.toFixed(2) });
+      if (!result.error) {
+        setEditValues(prev => { const next = { ...prev }; delete next[budget.id]; return next; });
+      }
     } catch (error) {
       console.error('Failed to save budget:', error);
     }
@@ -72,21 +63,22 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
     if (!user || isNaN(val) || val <= 0) return;
     setSaving('new');
     try {
-      await apiClient.createBudget({
+      const result = await addBudget({
         category: newCategory,
         month,
-        amount: val,
+        amount: val.toFixed(2),
       });
-      await fetchBudgets();
-      setNewAmount('');
-      setShowForm(false);
+      if (!result.error) {
+        setNewAmount('');
+        setShowForm(false);
+      }
     } catch (error) {
       console.error('Failed to create budget:', error);
     }
     setSaving(null);
   };
 
-  const usedCategories = new Set(budgets.map(b => b.category));
+  const usedCategories = new Set(currentMonthBudgets.map(b => b.category));
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -144,18 +136,19 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
 
       {loading ? (
         <div className="flex justify-center py-24"><div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>
-      ) : budgets.length === 0 ? (
+      ) : currentMonthBudgets.length === 0 ? (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center py-20 text-slate-500 dark:text-slate-400">
           <DollarSign size={40} className="mb-3 opacity-20" />
           <p className="text-sm font-medium">No budgets set for this month</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {budgets.map((budget, idx) => {
+          {currentMonthBudgets.map((budget, idx) => {
             const spent = spentByCategory[budget.category] ?? 0;
-            const pct = Math.min((spent / budget.amount) * 100, 100);
-            const over = spent > budget.amount;
-            const warn = spent / budget.amount >= 0.8 && !over;
+            const budgetAmount = parseFloat(budget.amount);
+            const pct = Math.min((spent / budgetAmount) * 100, 100);
+            const over = spent > budgetAmount;
+            const warn = spent / budgetAmount >= 0.8 && !over;
             const color = CATEGORY_COLORS[budget.category as Category] ?? '#94a3b8';
             const isEditing = budget.id in editValues;
 
@@ -192,7 +185,7 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
 
                 {over && (
                   <p className="text-xs font-bold text-red-600 dark:text-red-400">
-                    Over by {fmt(spent - budget.amount)}
+                    Over by {fmt(spent - budgetAmount)}
                   </p>
                 )}
 
@@ -217,7 +210,7 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
                     </>
                   ) : (
                     <button
-                      onClick={() => setEditValues(prev => ({ ...prev, [budget.id]: budget.amount.toString() }))}
+                      onClick={() => setEditValues(prev => ({ ...prev, [budget.id]: budget.amount }))}
                       className="w-full py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200"
                     >
                       Edit Limit

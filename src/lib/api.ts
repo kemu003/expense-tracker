@@ -1,4 +1,6 @@
-const API_BASE = 'http://localhost:8000/api';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+
+const API_BASE = 'https://expense-trackerbackend-im6h.onrender.com/api/';
 
 interface AuthResponse {
   access: string;
@@ -12,178 +14,221 @@ interface User {
 }
 
 class APIClient {
-  private token: string | null = null;
+  private axiosInstance: AxiosInstance;
+  private refreshPromise: Promise<AuthResponse> | null = null;
 
   constructor() {
-    this.token = localStorage.getItem('access_token');
-  }
-
-  setToken(token: string | null) {
-    this.token = token;
-    if (token) {
-      localStorage.setItem('access_token', token);
-    } else {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-    }
-  }
-
-  getToken() {
-    return this.token;
-  }
-
-  private async request(endpoint: string, options: RequestInit = {}) {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      ...options,
-      headers,
+    this.axiosInstance = axios.create({
+      baseURL: API_BASE,
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
-    if (response.status === 401) {
-      // Token expired or invalid, clear it
-      this.setToken(null);
-      throw new Error('Unauthorized');
+    // Request interceptor to add auth token
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Response interceptor to handle 401 errors and refresh token
+    this.axiosInstance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+
+          try {
+            const newTokens = await this.refreshToken();
+            localStorage.setItem('access_token', newTokens.access);
+            localStorage.setItem('refresh_token', newTokens.refresh);
+            originalRequest.headers.Authorization = `Bearer ${newTokens.access}`;
+            return this.axiosInstance(originalRequest);
+          } catch (refreshError) {
+            // Refresh failed, clear tokens and redirect to login
+            this.clearTokens();
+            window.location.href = '/'; // Redirect to auth page
+            return Promise.reject(refreshError);
+          }
+        }
+
+        return Promise.reject(error);
+      }
+    );
+  }
+
+  private async refreshToken(): Promise<AuthResponse> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
     }
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.error || error.detail || 'API request failed');
-    }
+    this.refreshPromise = axios.post<AuthResponse>(`${API_BASE}auth/refresh/`, {
+      refresh: localStorage.getItem('refresh_token'),
+    }).then(response => response.data);
 
-    if (response.status === 204) {
-      return null;
+    try {
+      const tokens = await this.refreshPromise;
+      this.refreshPromise = null;
+      return tokens;
+    } catch (error) {
+      this.refreshPromise = null;
+      throw error;
     }
+  }
 
-    return response.json();
+  private clearTokens() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_email');
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('user_id');
   }
 
   // Auth endpoints
-  async register(email: string, password: string, name: string) {
-    const data = await this.request('/auth/register/', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, name }),
+  async register(email: string, password: string, name: string): Promise<any> {
+    const response = await this.axiosInstance.post('/auth/register/', {
+      email,
+      password,
+      name,
     });
-    return data;
+    return response.data;
   }
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    const data = await this.request('/auth/login/', {
-      method: 'POST',
-      body: JSON.stringify({ username: email, password }),
+    const response = await this.axiosInstance.post<AuthResponse>('/auth/login/', {
+      username: email,
+      password,
     });
-    return data;
+    return response.data;
   }
 
   // Expense endpoints
-  async getExpenses() {
-    return this.request('/expenses/');
+  async getExpenses(params?: { category?: string; date_from?: string; date_to?: string; search?: string }): Promise<any[]> {
+    const response = await this.axiosInstance.get('/expenses/', { params });
+    return response.data;
   }
 
   async createExpense(expense: {
     title: string;
-    amount: number;
+    amount: string;
     category: string;
     date: string;
     notes: string;
-  }) {
-    return this.request('/expenses/', {
-      method: 'POST',
-      body: JSON.stringify(expense),
-    });
+  }): Promise<any> {
+    const response = await this.axiosInstance.post('/expenses/', expense);
+    return response.data;
   }
 
-  async updateExpense(id: number, expense: Partial<any>) {
-    return this.request(`/expenses/${id}/`, {
-      method: 'PATCH',
-      body: JSON.stringify(expense),
-    });
+  async updateExpense(id: number, expense: Partial<{
+    title: string;
+    amount: string;
+    category: string;
+    date: string;
+    notes: string;
+  }>): Promise<any> {
+    const response = await this.axiosInstance.patch(`/expenses/${id}/`, expense);
+    return response.data;
   }
 
-  async deleteExpense(id: number) {
-    return this.request(`/expenses/${id}/`, {
-      method: 'DELETE',
-    });
+  async deleteExpense(id: number): Promise<void> {
+    await this.axiosInstance.delete(`/expenses/${id}/`);
   }
 
   // Income endpoints
-  async getIncome() {
-    return this.request('/income/');
+  async getIncome(params?: { date_from?: string; date_to?: string; search?: string }): Promise<any[]> {
+    const response = await this.axiosInstance.get('/income/', { params });
+    return response.data;
   }
 
   async createIncome(income: {
-    amount: number;
+    amount: string;
     source: string;
     date: string;
     notes: string;
-  }) {
-    return this.request('/income/', {
-      method: 'POST',
-      body: JSON.stringify(income),
-    });
+  }): Promise<any> {
+    const response = await this.axiosInstance.post('/income/', income);
+    return response.data;
   }
 
-  async updateIncome(id: number, income: Partial<any>) {
-    return this.request(`/income/${id}/`, {
-      method: 'PATCH',
-      body: JSON.stringify(income),
-    });
+  async updateIncome(id: number, income: Partial<{
+    amount: string;
+    source: string;
+    date: string;
+    notes: string;
+  }>): Promise<any> {
+    const response = await this.axiosInstance.patch(`/income/${id}/`, income);
+    return response.data;
   }
 
-  async deleteIncome(id: number) {
-    return this.request(`/income/${id}/`, {
-      method: 'DELETE',
-    });
+  async deleteIncome(id: number): Promise<void> {
+    await this.axiosInstance.delete(`/income/${id}/`);
   }
 
   // Budget endpoints
-  async getBudgets() {
-    return this.request('/budgets/');
+  async getBudgets(params?: { month?: string }): Promise<any[]> {
+    const response = await this.axiosInstance.get('/budgets/', { params });
+    return response.data;
   }
 
   async createBudget(budget: {
     category: string;
     month: string;
-    amount: number;
-  }) {
-    return this.request('/budgets/', {
-      method: 'POST',
-      body: JSON.stringify(budget),
-    });
+    amount: string;
+  }): Promise<any> {
+    const response = await this.axiosInstance.post('/budgets/', budget);
+    return response.data;
   }
 
-  async updateBudget(id: number, budget: Partial<any>) {
-    return this.request(`/budgets/${id}/`, {
-      method: 'PATCH',
-      body: JSON.stringify(budget),
-    });
+  async updateBudget(id: number, budget: Partial<{
+    category: string;
+    month: string;
+    amount: string;
+  }>): Promise<any> {
+    const response = await this.axiosInstance.patch(`/budgets/${id}/`, budget);
+    return response.data;
   }
 
-  async deleteBudget(id: number) {
-    return this.request(`/budgets/${id}/`, {
-      method: 'DELETE',
-    });
+  async deleteBudget(id: number): Promise<void> {
+    await this.axiosInstance.delete(`/budgets/${id}/`);
   }
 
   // Dashboard endpoints
-  async getDashboardStats() {
-    return this.request('/dashboard/stats/');
+  async getDashboardStats(): Promise<{
+    today_expenses: string;
+    week_expenses: string;
+    month_expenses: string;
+    month_income: string;
+    balance: string;
+  }> {
+    const response = await this.axiosInstance.get('/dashboard/stats/');
+    return response.data;
   }
 
   // Analytics endpoints
-  async getCategoryBreakdown() {
-    return this.request('/analytics/category_breakdown/');
+  async getCategoryBreakdown(): Promise<Array<{
+    label: string;
+    value: string;
+    percentage: number;
+  }>> {
+    const response = await this.axiosInstance.get('/analytics/category_breakdown/');
+    return response.data;
   }
 
-  async getMonthlyTrends() {
-    return this.request('/analytics/monthly_trends/');
+  async getMonthlyTrends(): Promise<{
+    months: string[];
+    expenses: number[];
+    income: number[];
+  }> {
+    const response = await this.axiosInstance.get('/analytics/monthly_trends/');
+    return response.data;
   }
 }
 
