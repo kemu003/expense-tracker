@@ -1,0 +1,73 @@
+import { useState, useEffect, useCallback } from 'react';
+import { Expense } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import apiClient from '../lib/api';
+
+export function useExpenses() {
+  const { user } = useAuth();
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchExpenses = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const data = await apiClient.getExpenses();
+      setExpenses((data as Expense[]) ?? []);
+    } catch (error) {
+      console.error('Failed to fetch expenses:', error);
+      setExpenses([]);
+    }
+    setLoading(false);
+  }, [user]);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
+
+  const addExpense = async (expense: Omit<Expense, 'id' | 'user_id' | 'created_at'>) => {
+    if (!user) return { error: 'Not authenticated' };
+    try {
+      await apiClient.createExpense({
+        title: expense.title,
+        amount: parseFloat(String(expense.amount)),
+        category: expense.category,
+        date: expense.date,
+        notes: expense.notes,
+      });
+      await fetchExpenses();
+      return { error: null };
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  };
+
+  const updateExpense = async (id: string, updates: Partial<Omit<Expense, 'id' | 'user_id' | 'created_at'>>) => {
+    try {
+      const updateData: any = {};
+      if (updates.title) updateData.title = updates.title;
+      if (updates.amount) updateData.amount = parseFloat(String(updates.amount));
+      if (updates.category) updateData.category = updates.category;
+      if (updates.date) updateData.date = updates.date;
+      if (updates.notes) updateData.notes = updates.notes;
+      
+      await apiClient.updateExpense(parseInt(id), updateData);
+      await fetchExpenses();
+      return { error: null };
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  };
+
+  const deleteExpense = async (id: string) => {
+    try {
+      await apiClient.deleteExpense(parseInt(id));
+      setExpenses(prev => prev.filter(e => e.id !== id));
+      return { error: null };
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  };
+
+  return { expenses, loading, refetch: fetchExpenses, addExpense, updateExpense, deleteExpense };
+}
