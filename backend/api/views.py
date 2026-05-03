@@ -7,9 +7,12 @@ from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import timedelta, date
 from calendar import monthrange
+import logging
 from .models import Expense, Income, Budget
 from .serializers import ExpenseSerializer, IncomeSerializer, BudgetSerializer
 from .permissions import IsOwner
+
+logger = logging.getLogger('api')
 
 class ExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
@@ -173,18 +176,34 @@ class AnalyticsViewSet(viewsets.ViewSet):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
+    logger.debug(f"📝 Register request received | Content-Type: {request.META.get('CONTENT_TYPE')} | Data: {request.data}")
+    
     email = request.data.get('email')
     password = request.data.get('password')
     name = request.data.get('name')
     
+    logger.debug(f"🔍 Extracted fields | email: {email} | name: {name} | password_provided: {bool(password)}")
+    
     if not email or not password or not name:
-        return Response({'error': 'Email, password, and name are required'}, status=status.HTTP_400_BAD_REQUEST)
+        error_msg = 'Email, password, and name are required'
+        logger.warning(f"❌ Validation error: {error_msg}")
+        return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
     
     if len(password) < 6:
-        return Response({'error': 'Password must be at least 6 characters'}, status=status.HTTP_400_BAD_REQUEST)
+        error_msg = 'Password must be at least 6 characters'
+        logger.warning(f"❌ Validation error: {error_msg}")
+        return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
     
     if User.objects.filter(email=email).exists():
-        return Response({'error': 'User with this email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        error_msg = 'User with this email already exists'
+        logger.warning(f"❌ Validation error: {error_msg} (email: {email})")
+        return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
     
-    user = User.objects.create_user(username=email, email=email, password=password, first_name=name)
-    return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
+    try:
+        user = User.objects.create_user(username=email, email=email, password=password, first_name=name)
+        logger.info(f"✅ User created successfully | ID: {user.id} | Email: {email}")
+        return Response({'message': 'User created successfully'}, status=status.HTTP_201_CREATED)
+    except Exception as e:
+        error_msg = f'Error creating user: {str(e)}'
+        logger.error(f"❌ Exception during user creation: {error_msg}")
+        return Response({'error': error_msg}, status=status.HTTP_400_BAD_REQUEST)
