@@ -1,5 +1,5 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.decorators import action, api_view, permission_classes, csrf_exempt
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.contrib.auth.models import User
@@ -173,9 +173,14 @@ class AnalyticsViewSet(viewsets.ViewSet):
             'income': income_data,
         })
 
-@api_view(['POST'])
+@csrf_exempt
+@api_view(['POST', 'OPTIONS'])
 @permission_classes([AllowAny])
 def register(request):
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        return Response(status=status.HTTP_200_OK)
+    
     logger.debug(f"📝 Register request received | Content-Type: {request.META.get('CONTENT_TYPE')} | Data: {request.data}")
     
     email = request.data.get('email')
