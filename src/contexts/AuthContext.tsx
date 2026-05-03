@@ -57,8 +57,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       return { error: null };
-    } catch (error) {
-      return { error: (error as Error).message };
+    } catch (error: any) {
+      // Extract error message from axios error response
+      const message = error?.response?.data?.error || error?.response?.data?.detail || error?.message || 'Registration failed';
+      console.error('Registration error:', { error, message, responseData: error?.response?.data });
+      return { error: message };
     }
   };
 

@@ -60,7 +60,18 @@ class APIClient {
           }
         }
 
-        return Promise.reject(error);
+        // For other errors, create a detailed error object
+        const errorMessage = error?.response?.data?.error || 
+                            error?.response?.data?.detail || 
+                            error?.message || 
+                            'Request failed';
+        
+        // Create new error with detailed message
+        const detailedError = new Error(errorMessage);
+        (detailedError as any).response = error.response;
+        (detailedError as any).status = error.response?.status;
+        
+        return Promise.reject(detailedError);
       }
     );
   }
@@ -72,7 +83,11 @@ class APIClient {
 
     this.refreshPromise = axios.post<AuthResponse>(`${API_BASE}auth/refresh/`, {
       refresh: localStorage.getItem('refresh_token'),
-    }).then(response => response.data);
+    }).then(response => response.data)
+      .catch(error => {
+        const message = error?.response?.data?.error || error?.response?.data?.detail || 'Token refresh failed';
+        throw new Error(message);
+      });
 
     try {
       const tokens = await this.refreshPromise;
