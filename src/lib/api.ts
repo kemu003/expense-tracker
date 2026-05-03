@@ -109,20 +109,53 @@ class APIClient {
 
   // Auth endpoints
   async register(email: string, password: string, name: string): Promise<any> {
-    const response = await this.axiosInstance.post('/auth/register/', {
-      email,
-      password,
-      name,
-    });
-    return response.data;
+    // Validate inputs before sending
+    if (!email || !password || !name) {
+      throw new Error('All fields (name, email, password) are required');
+    }
+    
+    const payload = {
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      password: password,
+    };
+    
+    console.log('📤 Register Request Payload:', payload);
+    
+    try {
+      const response = await this.axiosInstance.post('/auth/register/', payload);
+      console.log('✅ Register Response:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Register Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      throw error;
+    }
   }
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await this.axiosInstance.post<AuthResponse>('/auth/login/', {
-      username: email,
-      password,
-    });
-    return response.data;
+    const payload = {
+      username: email.trim().toLowerCase(),
+      password: password,
+    };
+    
+    console.log('📤 Login Request Payload:', { username: payload.username, password: '***' });
+    
+    try {
+      const response = await this.axiosInstance.post<AuthResponse>('/auth/login/', payload);
+      console.log('✅ Login Response: Tokens received');
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Login Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      throw error;
+    }
   }
 
   // Expense endpoints

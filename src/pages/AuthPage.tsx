@@ -20,11 +20,28 @@ export default function AuthPage() {
     setLoading(true);
 
     if (mode === 'register') {
+      // Validation
+      if (!email.trim() || !password.trim() || !name.trim()) {
+        setError('All fields are required (name, email, password).');
+        setLoading(false);
+        return;
+      }
+      
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        setError('Please enter a valid email address.');
+        setLoading(false);
+        return;
+      }
+
       if (password.length < 6) {
         setError('Password must be at least 6 characters.');
         setLoading(false);
         return;
       }
+
+      console.log('📝 Submitting registration with:', { email: email.trim(), name: name.trim(), password: '***' });
       const { error } = await signUp(email, password, name);
       if (error) {
         setError(error);
