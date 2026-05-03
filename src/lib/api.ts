@@ -61,15 +61,30 @@ class APIClient {
         }
 
         // For other errors, create a detailed error object
-        const errorMessage = error?.response?.data?.error || 
-                            error?.response?.data?.detail || 
-                            error?.message || 
-                            'Request failed';
+        const responseData = error?.response?.data;
+        
+        // Check if response is HTML (error from Django, not DRF)
+        let errorMessage = 'Request failed';
+        if (typeof responseData === 'string' && responseData.includes('<!DOCTYPE')) {
+          errorMessage = `Server Error (${error.response?.status}): Backend returned HTML error page. This may indicate a server misconfiguration or the API endpoint not found.`;
+        } else if (responseData?.error) {
+          errorMessage = responseData.error;
+        } else if (responseData?.detail) {
+          errorMessage = responseData.detail;
+        } else if (typeof responseData === 'object' && Object.keys(responseData).length > 0) {
+          // Handle field errors like {"email": ["already exists"]}
+          const firstKey = Object.keys(responseData)[0];
+          const firstValue = responseData[firstKey];
+          errorMessage = Array.isArray(firstValue) ? firstValue[0] : firstValue;
+        } else if (error?.message) {
+          errorMessage = error.message;
+        }
         
         // Create new error with detailed message
         const detailedError = new Error(errorMessage);
         (detailedError as any).response = error.response;
         (detailedError as any).status = error.response?.status;
+        (detailedError as any).responseData = responseData;
         
         return Promise.reject(detailedError);
       }
