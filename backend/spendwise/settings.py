@@ -28,8 +28,11 @@ DEBUG = True
 ALLOWED_HOSTS = [
     "expense-trackerbackend-im6h.onrender.com",
     "localhost",
-    "127.0.0.1"
+    "127.0.0.1",
+    "*"
 ]
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
@@ -157,10 +160,13 @@ SIMPLE_JWT = {
 }
 
 # CORS Configuration
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ["*"]
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://expense-tracker-z8h7.onrender.com",
+]
 
 # Logging Configuration
 LOGGING = {

@@ -138,7 +138,7 @@ class APIClient {
     console.log('📤 Register Request Payload:', payload);
     
     try {
-      const response = await this.axiosInstance.post('/auth/register/', payload);
+      const response = await this.axiosInstance.post('auth/register/', payload);
       console.log('✅ Register Response:', response.data);
       return response.data;
     } catch (error: any) {
@@ -160,7 +160,7 @@ class APIClient {
     console.log('📤 Login Request Payload:', { username: payload.username, password: '***' });
     
     try {
-      const response = await this.axiosInstance.post<AuthResponse>('/auth/login/', payload);
+      const response = await this.axiosInstance.post<AuthResponse>('auth/login/', payload);
       console.log('✅ Login Response: Tokens received');
       return response.data;
     } catch (error: any) {
@@ -175,7 +175,7 @@ class APIClient {
 
   // Expense endpoints
   async getExpenses(params?: { category?: string; date_from?: string; date_to?: string; search?: string }): Promise<any[]> {
-    const response = await this.axiosInstance.get('/expenses/', { params });
+    const response = await this.axiosInstance.get('expenses/', { params });
     return response.data;
   }
 
@@ -186,7 +186,7 @@ class APIClient {
     date: string;
     notes: string;
   }): Promise<any> {
-    const response = await this.axiosInstance.post('/expenses/', expense);
+    const response = await this.axiosInstance.post('expenses/', expense);
     return response.data;
   }
 
@@ -197,17 +197,17 @@ class APIClient {
     date: string;
     notes: string;
   }>): Promise<any> {
-    const response = await this.axiosInstance.patch(`/expenses/${id}/`, expense);
+    const response = await this.axiosInstance.patch(`expenses/${id}/`, expense);
     return response.data;
   }
 
   async deleteExpense(id: number): Promise<void> {
-    await this.axiosInstance.delete(`/expenses/${id}/`);
+    await this.axiosInstance.delete(`expenses/${id}/`);
   }
 
   // Income endpoints
   async getIncome(params?: { date_from?: string; date_to?: string; search?: string }): Promise<any[]> {
-    const response = await this.axiosInstance.get('/income/', { params });
+    const response = await this.axiosInstance.get('income/', { params });
     return response.data;
   }
 
@@ -217,7 +217,7 @@ class APIClient {
     date: string;
     notes: string;
   }): Promise<any> {
-    const response = await this.axiosInstance.post('/income/', income);
+    const response = await this.axiosInstance.post('income/', income);
     return response.data;
   }
 
@@ -227,17 +227,17 @@ class APIClient {
     date: string;
     notes: string;
   }>): Promise<any> {
-    const response = await this.axiosInstance.patch(`/income/${id}/`, income);
+    const response = await this.axiosInstance.patch(`income/${id}/`, income);
     return response.data;
   }
 
   async deleteIncome(id: number): Promise<void> {
-    await this.axiosInstance.delete(`/income/${id}/`);
+    await this.axiosInstance.delete(`income/${id}/`);
   }
 
   // Budget endpoints
   async getBudgets(params?: { month?: string }): Promise<any[]> {
-    const response = await this.axiosInstance.get('/budgets/', { params });
+    const response = await this.axiosInstance.get('budgets/', { params });
     return response.data;
   }
 
@@ -246,7 +246,7 @@ class APIClient {
     month: string;
     amount: string;
   }): Promise<any> {
-    const response = await this.axiosInstance.post('/budgets/', budget);
+    const response = await this.axiosInstance.post('budgets/', budget);
     return response.data;
   }
 
@@ -255,12 +255,12 @@ class APIClient {
     month: string;
     amount: string;
   }>): Promise<any> {
-    const response = await this.axiosInstance.patch(`/budgets/${id}/`, budget);
+    const response = await this.axiosInstance.patch(`budgets/${id}/`, budget);
     return response.data;
   }
 
   async deleteBudget(id: number): Promise<void> {
-    await this.axiosInstance.delete(`/budgets/${id}/`);
+    await this.axiosInstance.delete(`budgets/${id}/`);
   }
 
   // Dashboard endpoints
@@ -271,7 +271,7 @@ class APIClient {
     month_income: string;
     balance: string;
   }> {
-    const response = await this.axiosInstance.get('/dashboard/stats/');
+    const response = await this.axiosInstance.get('dashboard/stats/');
     return response.data;
   }
 
@@ -281,7 +281,7 @@ class APIClient {
     value: string;
     percentage: number;
   }>> {
-    const response = await this.axiosInstance.get('/analytics/category_breakdown/');
+    const response = await this.axiosInstance.get('analytics/category_breakdown/');
     return response.data;
   }
 
@@ -290,7 +290,7 @@ class APIClient {
     expenses: number[];
     income: number[];
   }> {
-    const response = await this.axiosInstance.get('/analytics/monthly_trends/');
+    const response = await this.axiosInstance.get('analytics/monthly_trends/');
     return response.data;
   }
 }
