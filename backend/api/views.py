@@ -200,20 +200,20 @@ class AnalyticsViewSet(viewsets.ViewSet):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
-    email = request.data.get('email')
-    password = request.data.get('password')
-    name = request.data.get('name')
-
-    if not email or not password or not name:
-        return Response({'error': 'Email, password, and name are required'}, status=400)
-
-    if len(password) < 6:
-        return Response({'error': 'Password must be at least 6 characters'}, status=400)
-
-    if User.objects.filter(email=email).exists():
-        return Response({'error': 'User with this email already exists'}, status=400)
-
     try:
+        email = request.data.get('email')
+        password = request.data.get('password')
+        name = request.data.get('name')
+
+        if not email or not password or not name:
+            return Response({'error': 'Email, password, and name are required'}, status=400)
+
+        if len(password) < 6:
+            return Response({'error': 'Password must be at least 6 characters'}, status=400)
+
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'User with this email already exists'}, status=400)
+
         user = User.objects.create_user(
             username=email,
             email=email,
@@ -224,4 +224,5 @@ def register(request):
         return Response({'message': 'User created successfully'}, status=201)
 
     except Exception as e:
-        return Response({'error': str(e)}, status=500)
+        logger.error(f"Registration Error: {str(e)}", exc_info=True)
+        return Response({'error': 'An internal server error occurred.', 'detail': str(e)}, status=500)

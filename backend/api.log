@@ -782,3 +782,5 @@ Traceback (most recent call last):
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 django.db.utils.OperationalError: no such table: api_budget
 INFO 2026-05-02 17:47:09,873 middleware 11136 18764 GET /api/budgets/ | Status: 500 | User: admin@gmail.com
+INFO 2026-05-07 07:44:28,233 middleware 15588 7120 POST /api/auth/register/ | Status: 201 | Content-Type: application/json | User: Anonymous
+INFO 2026-05-07 07:44:38,051 middleware 15588 22224 POST /api/auth/login/ | Status: 200 | Content-Type: application/json | User: Anonymous
