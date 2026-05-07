@@ -147,14 +147,16 @@ class AnalyticsViewSet(viewsets.ViewSet):
         expenses = Expense.objects.filter(user=user, date__gte=month_start)
         category_totals = expenses.values('category').annotate(total=Sum('amount')).order_by('-total')
 
-        total = sum(item['total'] for item in category_totals)
+        # Ensure total is safely calculated, treating None as 0
+        total = sum((item['total'] or 0) for item in category_totals)
         data = []
 
         for item in category_totals:
+            item_total = float(item['total'] or 0)
             data.append({
                 'label': item['category'],
-                'value': float(item['total']),
-                'percentage': (item['total'] / total * 100) if total > 0 else 0,
+                'value': item_total,
+                'percentage': (item_total / total * 100) if total > 0 else 0,
             })
 
         return Response(data)
