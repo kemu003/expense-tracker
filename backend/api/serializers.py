@@ -15,6 +15,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
             'user_id',
             'title',
             'amount',
+            'currency',
             'category',
             'date',
             'notes',
@@ -40,6 +41,7 @@ class IncomeSerializer(serializers.ModelSerializer):
             'id',
             'user_id',
             'amount',
+            'currency',
             'source',
             'date',
             'notes',
@@ -67,6 +69,7 @@ class BudgetSerializer(serializers.ModelSerializer):
             'category',
             'month',
             'amount',
+            'currency',
             'created_at'
         ]
         read_only_fields = ['id', 'user_id', 'created_at']

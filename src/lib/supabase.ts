@@ -1,6 +1,15 @@
 export type Category = 'Food' | 'Transport' | 'Bills' | 'Shopping' | 'Entertainment' | 'Health' | 'Other';
+export type Currency = 'KES' | 'USD' | 'EUR' | 'GBP' | 'NGN' | 'ZAR';
 
 export const CATEGORIES: Category[] = ['Food', 'Transport', 'Bills', 'Shopping', 'Entertainment', 'Health', 'Other'];
+export const CURRENCIES: { code: Currency; name: string; symbol: string }[] = [
+  { code: 'KES', name: 'Kenyan Shilling', symbol: 'KSh' },
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'NGN', name: 'Nigerian Naira', symbol: '₦' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+];
 
 export const CATEGORY_COLORS: Record<Category, string> = {
   Food: '#f97316',
@@ -17,6 +26,7 @@ export interface Expense {
   user_id: number;
   title: string;
   amount: string;
+  currency: Currency;
   category: Category;
   date: string;
   notes: string;
@@ -27,6 +37,7 @@ export interface Income {
   id: number;
   user_id: number;
   amount: string;
+  currency: Currency;
   source: string;
   date: string;
   notes: string;
@@ -39,6 +50,7 @@ export interface Budget {
   category: Category;
   month: string;
   amount: string;
+  currency: Currency;
   created_at: string;
 }
 

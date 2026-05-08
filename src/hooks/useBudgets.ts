@@ -32,6 +32,7 @@ export function useBudgets() {
         category: budget.category,
         month: budget.month,
         amount: budget.amount,
+        currency: budget.currency || 'KES',
       });
       await fetchBudgets();
       return { error: null };
@@ -46,6 +47,7 @@ export function useBudgets() {
       if (updates.category) updateData.category = updates.category;
       if (updates.month) updateData.month = updates.month;
       if (updates.amount) updateData.amount = updates.amount;
+      if (updates.currency) updateData.currency = updates.currency;
 
       await apiClient.updateBudget(id, updateData);
       await fetchBudgets();

@@ -12,6 +12,7 @@ import logging
 from .models import Expense, Income, Budget
 from .serializers import ExpenseSerializer, IncomeSerializer, BudgetSerializer
 from .permissions import IsOwner
+from .services import AnalyticsService
 
 logger = logging.getLogger('api')
 
@@ -194,6 +195,21 @@ class AnalyticsViewSet(viewsets.ViewSet):
             'expenses': expense_data,
             'income': income_data,
         })
+
+    @action(detail=False, methods=['get'])
+    def insights(self, request):
+        insights = AnalyticsService.get_ai_insights(request.user)
+        return Response(insights)
+
+    @action(detail=False, methods=['get'])
+    def recommendations(self, request):
+        recommendations = AnalyticsService.get_recommendations(request.user)
+        return Response(recommendations)
+
+    @action(detail=False, methods=['get'])
+    def monthly_summary(self, request):
+        summary = AnalyticsService.get_monthly_summary(request.user)
+        return Response(summary)
 
 
 # =========================

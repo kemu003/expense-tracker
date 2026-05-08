@@ -7,6 +7,9 @@ export function useAnalytics() {
   const { user } = useAuth();
   const [categoryBreakdown, setCategoryBreakdown] = useState<CategoryBreakdown[]>([]);
   const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrends | null>(null);
+  const [insights, setInsights] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [monthlySummary, setMonthlySummary] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchCategoryBreakdown = useCallback(async () => {
@@ -31,11 +34,50 @@ export function useAnalytics() {
     }
   }, [user]);
 
+  const fetchInsights = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await apiClient.getInsights();
+      setInsights(data);
+    } catch (error) {
+      console.error('Failed to fetch insights:', error);
+      setInsights([]);
+    }
+  }, [user]);
+
+  const fetchRecommendations = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await apiClient.getRecommendations();
+      setRecommendations(data);
+    } catch (error) {
+      console.error('Failed to fetch recommendations:', error);
+      setRecommendations([]);
+    }
+  }, [user]);
+
+  const fetchMonthlySummary = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await apiClient.getMonthlySummary();
+      setMonthlySummary(data);
+    } catch (error) {
+      console.error('Failed to fetch monthly summary:', error);
+      setMonthlySummary(null);
+    }
+  }, [user]);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    await Promise.all([fetchCategoryBreakdown(), fetchMonthlyTrends()]);
+    await Promise.all([
+      fetchCategoryBreakdown(),
+      fetchMonthlyTrends(),
+      fetchInsights(),
+      fetchRecommendations(),
+      fetchMonthlySummary()
+    ]);
     setLoading(false);
-  }, [fetchCategoryBreakdown, fetchMonthlyTrends]);
+  }, [fetchCategoryBreakdown, fetchMonthlyTrends, fetchInsights, fetchRecommendations, fetchMonthlySummary]);
 
   useEffect(() => {
     fetchAll();
@@ -44,9 +86,15 @@ export function useAnalytics() {
   return {
     categoryBreakdown,
     monthlyTrends,
+    insights,
+    recommendations,
+    monthlySummary,
     loading,
     refetch: fetchAll,
     refetchCategoryBreakdown: fetchCategoryBreakdown,
-    refetchMonthlyTrends: fetchMonthlyTrends
+    refetchMonthlyTrends: fetchMonthlyTrends,
+    refetchInsights: fetchInsights,
+    refetchRecommendations: fetchRecommendations,
+    refetchMonthlySummary: fetchMonthlySummary
   };
 }

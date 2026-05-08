@@ -30,6 +30,7 @@ export function useIncome() {
     try {
       await apiClient.createIncome({
         amount: entry.amount,
+        currency: entry.currency,
         source: entry.source,
         date: entry.date,
         notes: entry.notes,
@@ -45,6 +46,7 @@ export function useIncome() {
     try {
       const updateData: any = {};
       if (updates.amount) updateData.amount = updates.amount;
+      if (updates.currency) updateData.currency = updates.currency;
       if (updates.source) updateData.source = updates.source;
       if (updates.date) updateData.date = updates.date;
       if (updates.notes) updateData.notes = updates.notes;

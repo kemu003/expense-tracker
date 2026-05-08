@@ -31,6 +31,7 @@ export function useExpenses() {
       await apiClient.createExpense({
         title: expense.title,
         amount: expense.amount,
+        currency: expense.currency,
         category: expense.category,
         date: expense.date,
         notes: expense.notes,
@@ -47,6 +48,7 @@ export function useExpenses() {
       const updateData: any = {};
       if (updates.title) updateData.title = updates.title;
       if (updates.amount) updateData.amount = updates.amount;
+      if (updates.currency) updateData.currency = updates.currency;
       if (updates.category) updateData.category = updates.category;
       if (updates.date) updateData.date = updates.date;
       if (updates.notes) updateData.notes = updates.notes;

@@ -146,47 +146,80 @@ export default function BudgetsPage({ expenses }: BudgetsPageProps) {
           {currentMonthBudgets.map((budget, idx) => {
             const spent = spentByCategory[budget.category] ?? 0;
             const budgetAmount = parseFloat(budget.amount);
-            const pct = Math.min((spent / budgetAmount) * 100, 100);
-            const over = spent > budgetAmount;
-            const warn = spent / budgetAmount >= 0.8 && !over;
+            const usage = (spent / budgetAmount);
+            const pct = Math.min(usage * 100, 100);
+            
+            const over = usage >= 1;
+            const critical = usage >= 0.9 && !over;
+            const warning = usage >= 0.75 && !critical && !over;
+            
             const color = CATEGORY_COLORS[budget.category as Category] ?? '#94a3b8';
             const isEditing = budget.id in editValues;
 
             return (
-              <div key={budget.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 space-y-4 shadow-lg hover:shadow-xl transition-all duration-300 animate-in fade-in duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+              <div key={budget.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 space-y-5 shadow-xl hover:shadow-2xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 100}ms` }}>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">{budget.category}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-current/20" style={{ backgroundColor: color }}>
+                      {budget.category[0]}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 dark:text-white text-base tracking-tight">{budget.category}</h4>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Monthly Budget</p>
+                    </div>
                   </div>
                   {over
-                    ? <AlertTriangle size={18} className="text-red-500" />
-                    : warn
-                    ? <AlertTriangle size={18} className="text-amber-500" />
-                    : <CheckCircle2 size={18} className="text-green-500" />
+                    ? <div className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-xl animate-pulse"><AlertTriangle size={20} /></div>
+                    : critical
+                    ? <div className="p-2 bg-amber-50 dark:bg-amber-900/20 text-amber-500 rounded-xl"><AlertTriangle size={20} /></div>
+                    : warning
+                    ? <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-500 rounded-xl"><AlertTriangle size={20} /></div>
+                    : <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500 rounded-xl"><CheckCircle2 size={20} /></div>
                   }
                 </div>
 
-                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${pct}%`,
-                      maxWidth: '100%',
-                      backgroundColor: over ? '#ef4444' : warn ? '#f59e0b' : color,
-                    }}
-                  />
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                    <span>{Math.round(usage * 100)}% Used</span>
+                    <span>{fmt(budgetAmount - spent)} {over ? 'Over' : 'Left'}</span>
+                  </div>
+                  <div className="h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden p-1">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm"
+                      style={{
+                        width: `${pct}%`,
+                        backgroundColor: over ? '#f43f5e' : critical ? '#f59e0b' : warning ? '#3b82f6' : color,
+                      }}
+                    />
+                  </div>
                 </div>
 
-                <div className="flex justify-between text-xs font-medium text-slate-600 dark:text-slate-400">
-                  <span>{fmt(spent)} spent</span>
-                  <span>{fmt(budget.amount)} limit</span>
+                <div className="flex justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1">Spent</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">{fmt(spent)}</p>
+                  </div>
+                  <div className="w-px bg-slate-200 dark:bg-slate-700 h-8 self-center" />
+                  <div className="text-center">
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter mb-1">Limit</p>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">{fmt(budgetAmount)}</p>
+                  </div>
                 </div>
 
                 {over && (
-                  <p className="text-xs font-bold text-red-600 dark:text-red-400">
-                    Over by {fmt(spent - budgetAmount)}
-                  </p>
+                  <div className="px-4 py-2 bg-rose-500/10 border border-rose-500/20 rounded-xl">
+                    <p className="text-xs font-bold text-rose-600 dark:text-rose-400 text-center">
+                      ⚠️ Budget exceeded by {fmt(spent - budgetAmount)}
+                    </p>
+                  </div>
+                )}
+                
+                {critical && (
+                  <div className="px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                    <p className="text-xs font-bold text-amber-600 dark:text-amber-400 text-center">
+                      ⚡ 90% of budget reached. Be careful!
+                    </p>
+                  </div>
                 )}
 
                 <div className="flex gap-2 pt-1">

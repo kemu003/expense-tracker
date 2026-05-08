@@ -12,9 +12,19 @@ class Expense(models.Model):
         ('Other', 'Other'),
     ]
 
+    CURRENCY_CHOICES = [
+        ('KES', 'Kenyan Shilling'),
+        ('USD', 'US Dollar'),
+        ('EUR', 'Euro'),
+        ('GBP', 'British Pound'),
+        ('NGN', 'Nigerian Naira'),
+        ('ZAR', 'South African Rand'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='KES')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     date = models.DateField()
     notes = models.TextField(blank=True)
@@ -27,8 +37,18 @@ class Expense(models.Model):
         return f"{self.title} - {self.amount}"
 
 class Income(models.Model):
+    CURRENCY_CHOICES = [
+        ('KES', 'Kenyan Shilling'),
+        ('USD', 'US Dollar'),
+        ('EUR', 'Euro'),
+        ('GBP', 'British Pound'),
+        ('NGN', 'Nigerian Naira'),
+        ('ZAR', 'South African Rand'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='KES')
     source = models.CharField(max_length=255)
     date = models.DateField()
     notes = models.TextField(blank=True)
@@ -55,6 +75,7 @@ class Budget(models.Model):
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     month = models.CharField(max_length=7)  # YYYY-MM
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, choices=Expense.CURRENCY_CHOICES, default='KES')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

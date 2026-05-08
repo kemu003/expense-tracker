@@ -293,6 +293,38 @@ class APIClient {
     const response = await this.axiosInstance.get('analytics/monthly_trends/');
     return response.data;
   }
+
+  async getInsights(): Promise<Array<{
+    type: 'info' | 'warning' | 'danger' | 'success';
+    text: string;
+    icon: string;
+  }>> {
+    const response = await this.axiosInstance.get('analytics/insights/');
+    return response.data;
+  }
+
+  async getRecommendations(): Promise<Array<{
+    title: string;
+    text: string;
+    impact: 'high' | 'medium' | 'low';
+  }>> {
+    const response = await this.axiosInstance.get('analytics/recommendations/');
+    return response.data;
+  }
+
+  async getMonthlySummary(): Promise<{
+    total_income: number;
+    total_expenses: number;
+    total_savings: number;
+    savings_rate: number;
+    highest_spending_category: string;
+    predicted_monthly_spending: number;
+    income_trend: number;
+    expense_trend: number;
+  }> {
+    const response = await this.axiosInstance.get('analytics/monthly_summary/');
+    return response.data;
+  }
 }
 
 export const apiClient = new APIClient();
