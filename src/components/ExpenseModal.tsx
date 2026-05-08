@@ -32,7 +32,14 @@ export default function ExpenseModal({ expense, onClose, onSave }: ExpenseModalP
     if (!title.trim()) { setError('Please enter a title.'); return; }
     if (isNaN(amt) || amt <= 0) { setError('Please enter a valid amount.'); return; }
     setLoading(true);
-    const { error } = await onSave({ title: title.trim(), amount: amt.toFixed(2), currency, category, date, notes: notes.trim() });
+    const { error } = await onSave({ 
+      title: title.trim(), 
+      amount: amt.toFixed(2), 
+      currency, 
+      category, 
+      date, 
+      notes: notes.trim() 
+    });
     setLoading(false);
     if (error) { setError(error); return; }
     onClose();
@@ -40,90 +47,80 @@ export default function ExpenseModal({ expense, onClose, onSave }: ExpenseModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
-        <div className="flex items-center justify-between px-8 py-6 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50">
-          <div>
-            <h2 className="font-black text-slate-900 dark:text-white text-xl tracking-tight">
-              {expense ? 'Edit Expense' : 'New Expense'}
-            </h2>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Transaction Details</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 flex-shrink-0">
+          <h2 className="font-bold text-slate-900 dark:text-white text-lg">
+            {expense ? 'Edit Expense' : 'Add New Expense'}
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="space-y-2">
-            <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Description</label>
+        <div className="overflow-y-auto flex-1 min-h-0 custom-scrollbar">
+          <form id="expense-form" onSubmit={handleSubmit} className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">What did you spend on?</label>
             <input
               value={title}
               onChange={e => setTitle(e.target.value)}
               required
-              placeholder="What did you spend on?"
-              className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium"
+              placeholder="e.g. Lunch at restaurant, Gas..."
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Amount</label>
-              <div className="relative">
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={amount}
-                  onChange={e => setAmount(e.target.value)}
-                  required
-                  placeholder="0.00"
-                  className="w-full pl-4 pr-12 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-black"
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
-                  {CURRENCIES.find(c => c.code === currency)?.symbol}
-                </div>
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Amount</label>
+              <input
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                required
+                placeholder="0.00"
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
             </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Currency</label>
-              <div className="relative">
-                <select
-                  value={currency}
-                  onChange={e => setCurrency(e.target.value as Currency)}
-                  className="w-full appearance-none pl-10 pr-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-bold text-sm"
-                >
-                  {CURRENCIES.map(c => (
-                    <option key={c.code} value={c.code}>{c.code} - {c.name}</option>
-                  ))}
-                </select>
-                <Globe size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Currency</label>
+              <select
+                value={currency}
+                onChange={e => setCurrency(e.target.value as Currency)}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm"
+              >
+                {CURRENCIES.map(c => (
+                  <option key={c.code} value={c.code}>{c.code}</option>
+                ))}
+              </select>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Date</label>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Date</label>
             <input
               type="date"
               value={date}
               onChange={e => setDate(e.target.value)}
               required
-              className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-bold"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
             />
           </div>
 
-          <div className="space-y-3">
-            <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Category</label>
-            <div className="flex flex-wrap gap-2">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">Category</label>
+            <div className="grid grid-cols-3 gap-2">
               {CATEGORIES.map(cat => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setCategory(cat)}
-                  className={`px-4 py-2.5 rounded-2xl text-xs font-black border-2 transition-all duration-300 ${
+                  className={`px-3 py-2.5 rounded-xl text-xs font-semibold border-2 transition-all duration-200 ${
                     category === cat
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-600/30'
-                      : 'border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 dark:hover:bg-blue-900/20'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950'
                   }`}
                 >
                   {cat}
@@ -132,34 +129,37 @@ export default function ExpenseModal({ expense, onClose, onSave }: ExpenseModalP
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Notes</label>
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes (optional)</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               rows={2}
               placeholder="Add details about this expense..."
-              className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-medium resize-none"
+              className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
             />
           </div>
 
           {error && (
-            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800 flex items-center gap-3 animate-shake">
-              <AlertCircle size={18} className="text-rose-600 dark:text-rose-400 flex-shrink-0" />
-              <p className="text-sm font-bold text-rose-600 dark:text-rose-400">{error}</p>
+            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 flex items-center gap-2">
+              <AlertCircle size={16} className="text-red-600 dark:text-red-400 flex-shrink-0" />
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
+        </form>
+        </div>
 
-          <div className="flex gap-4 pt-4">
-            <button type="button" onClick={onClose} className="flex-1 py-4 rounded-2xl border-2 border-slate-100 dark:border-slate-800 text-sm font-black text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-300">
-              CANCEL
+        <div className="p-6 border-t border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-slate-900">
+          <div className="flex gap-3">
+            <button type="button" onClick={onClose} className="flex-1 py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200">
+              Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 py-4 rounded-2xl bg-slate-900 dark:bg-blue-600 hover:bg-black dark:hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-black tracking-widest transition-all duration-300 flex items-center justify-center gap-2 shadow-xl shadow-slate-900/20 dark:shadow-blue-600/20">
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              {expense ? 'UPDATE' : 'CREATE'}
+            <button type="submit" form="expense-form" disabled={loading} className="flex-1 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 text-white text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+              {loading && <Loader2 size={14} className="animate-spin" />}
+              {expense ? 'Update Expense' : 'Add Expense'}
             </button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

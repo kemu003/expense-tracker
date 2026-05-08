@@ -4,7 +4,40 @@ from datetime import timedelta, date
 from calendar import monthrange
 from .models import Expense, Income, Budget
 
+class CurrencyService:
+    # Static exchange rates for "Preparation" phase
+    # In production, these would come from an API
+    RATES = {
+        'KES': 1.0,
+        'USD': 129.50,
+        'EUR': 140.20,
+        'GBP': 165.40,
+        'NGN': 0.08,
+        'ZAR': 7.10,
+    }
+
+    @classmethod
+    def convert(cls, amount, from_currency, to_currency='KES'):
+        if from_currency == to_currency:
+            return float(amount)
+        
+        # Convert to KES first (our base)
+        amount_in_kes = float(amount) * cls.RATES.get(from_currency, 1.0)
+        
+        # Convert from KES to target
+        target_amount = amount_in_kes / cls.RATES.get(to_currency, 1.0)
+        return target_amount
+
 class AnalyticsService:
+    @staticmethod
+    def _get_total_in_kes(queryset, amount_field='amount'):
+        total = 0
+        for item in queryset:
+            amount = getattr(item, amount_field)
+            currency = getattr(item, 'currency', 'KES')
+            total += CurrencyService.convert(amount, currency, 'KES')
+        return total
+
     @staticmethod
     def get_monthly_summary(user):
         today = timezone.now().date()
@@ -14,12 +47,17 @@ class AnalyticsService:
 
         # Current Month
         curr_expenses = Expense.objects.filter(user=user, date__gte=month_start, date__lte=today)
-        curr_total_exp = curr_expenses.aggregate(Sum('amount'))['amount__sum'] or 0
-        curr_total_inc = Income.objects.filter(user=user, date__gte=month_start, date__lte=today).aggregate(Sum('amount'))['amount__sum'] or 0
+        curr_total_exp = AnalyticsService._get_total_in_kes(curr_expenses)
+        
+        curr_income = Income.objects.filter(user=user, date__gte=month_start, date__lte=today)
+        curr_total_inc = AnalyticsService._get_total_in_kes(curr_income)
         
         # Previous Month
-        prev_total_exp = Expense.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end).aggregate(Sum('amount'))['amount__sum'] or 0
-        prev_total_inc = Income.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end).aggregate(Sum('amount'))['amount__sum'] or 0
+        prev_expenses = Expense.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end)
+        prev_total_exp = AnalyticsService._get_total_in_kes(prev_expenses)
+        
+        prev_income = Income.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end)
+        prev_total_inc = AnalyticsService._get_total_in_kes(prev_income)
 
         savings = curr_total_inc - curr_total_exp
         savings_rate = (savings / curr_total_inc * 100) if curr_total_inc > 0 else 0
@@ -59,8 +97,11 @@ class AnalyticsService:
         prev_week_start = this_week_start - timedelta(days=7)
         prev_week_end = this_week_start - timedelta(days=1)
 
-        this_week_exp = Expense.objects.filter(user=user, date__gte=this_week_start).aggregate(Sum('amount'))['amount__sum'] or 0
-        prev_week_exp = Expense.objects.filter(user=user, date__gte=prev_week_start, date__lte=prev_week_end).aggregate(Sum('amount'))['amount__sum'] or 0
+        this_week_qs = Expense.objects.filter(user=user, date__gte=this_week_start)
+        this_week_exp = AnalyticsService._get_total_in_kes(this_week_qs)
+
+        prev_week_qs = Expense.objects.filter(user=user, date__gte=prev_week_start, date__lte=prev_week_end)
+        prev_week_exp = AnalyticsService._get_total_in_kes(prev_week_qs)
 
         if prev_week_exp > 0:
             diff = ((float(this_week_exp) - float(prev_week_exp)) / float(prev_week_exp)) * 100
@@ -81,12 +122,16 @@ class AnalyticsService:
         month_start = today.replace(day=1)
         budgets = Budget.objects.filter(user=user, month=today.strftime('%Y-%m'))
         for budget in budgets:
-            exp_sum = Expense.objects.filter(user=user, category=budget.category, date__gte=month_start).aggregate(Sum('amount'))['amount__sum'] or 0
+            exp_qs = Expense.objects.filter(user=user, category=budget.category, date__gte=month_start)
+            # Convert expenses to budget's currency for accurate comparison
+            exp_sum_kes = AnalyticsService._get_total_in_kes(exp_qs)
+            exp_sum = CurrencyService.convert(exp_sum_kes, 'KES', budget.currency)
+            
             usage = (float(exp_sum) / float(budget.amount)) * 100
             if usage >= 100:
                 insights.append({
                     'type': 'danger',
-                    'text': f"You've exceeded your {budget.category} budget!",
+                    'text': f"You've exceeded your {budget.category} budget ({budget.currency})!",
                     'icon': 'alert-circle'
                 })
             elif usage >= 90:

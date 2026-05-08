@@ -38,114 +38,77 @@ export default function IncomePage({ income, loading, onAdd, onUpdate, onDelete 
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Earnings History</h2>
-          <p className="text-sm text-slate-500 font-medium mt-1">Monitor your incoming wealth and revenue sources</p>
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{income.length} {income.length === 1 ? 'entry' : 'entries'}</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            {Object.entries(totalByCurrency).map(([curr, amt]) => (
+              <p key={curr} className="text-lg font-bold text-slate-900 dark:text-white">
+                {curr}: <span className="text-green-600 dark:text-green-400">{fmt(amt, curr)}</span>
+              </p>
+            ))}
+          </div>
         </div>
         <button
           onClick={() => { setEditing(null); setShowModal(true); }}
-          className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-black tracking-widest transition-all duration-300 shadow-xl shadow-emerald-600/20"
+          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-sm font-semibold transition-all duration-200 shadow-lg shadow-green-600/30"
         >
-          <Plus size={18} />
-          ADD INCOME
+          <Plus size={16} />
+          Add Income
         </button>
       </div>
 
-      {/* Summary Chips */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-2">
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-black tracking-wider uppercase">
-            {income.length} {income.length === 1 ? 'Entry' : 'Entries'}
-          </span>
-        </div>
-        <div className="flex flex-wrap gap-3 justify-end">
-          {Object.entries(totalByCurrency).map(([curr, amt]) => (
-            <div key={curr} className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800">
-              <span className="text-[10px] font-black text-emerald-400 uppercase">{curr} Total</span>
-              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{fmt(amt, curr)}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 overflow-hidden shadow-2xl">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg">
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-32 space-y-4">
-            <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm font-bold text-slate-400 animate-pulse">Updating income records...</p>
-          </div>
+          <div className="flex justify-center py-24"><div className="w-8 h-8 border-3 border-green-500 border-t-transparent rounded-full animate-spin" /></div>
         ) : income.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-slate-300">
-            <div className="w-20 h-20 rounded-full bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center mb-6">
-              <Wallet size={40} className="opacity-20" />
-            </div>
-            <p className="font-black text-xl text-slate-400">No income recorded</p>
-            <p className="text-sm font-medium mt-2">Start by adding your first revenue source</p>
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
+            <Wallet size={40} className="mb-3 opacity-20" />
+            <p className="text-sm font-medium">No income recorded yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Source</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Date</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Amount</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {income.map((e, idx) => (
-                  <tr key={e.id} className="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all duration-300 animate-in fade-in slide-in-from-left-4" style={{ animationDelay: `${idx * 30}ms` }}>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-lg shadow-emerald-600/10 transition-transform group-hover:scale-110 group-hover:rotate-6">
-                          <Wallet size={20} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-base font-bold text-slate-900 dark:text-white truncate group-hover:text-emerald-600 transition-colors">{e.source}</p>
-                          {e.notes && <p className="text-xs text-slate-400 font-medium truncate mt-0.5">{e.notes}</p>}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5">
-                      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-bold">
-                        <Calendar size={14} className="opacity-50" />
-                        {format(e.date)}
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex flex-col items-end">
-                        <p className="text-base font-black text-emerald-600">{fmt(e.amount, e.currency)}</p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <Globe size={10} className="text-slate-300" />
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{e.currency}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-8 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => { setEditing(e); setShowModal(true); }}
-                          className="p-2.5 rounded-xl text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition-all"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(e.id)}
-                          disabled={deletingId === e.id}
-                          className="p-2.5 rounded-xl text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-500 transition-all"
-                        >
-                          {deletingId === e.id ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="hidden sm:grid grid-cols-[1fr_120px_120px_96px] gap-4 px-6 py-4 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50">
+              <span>Source</span>
+              <span>Date</span>
+              <span className="text-right">Amount</span>
+              <span className="text-right">Actions</span>
+            </div>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {income.map((e, idx) => (
+                <li key={e.id} className="flex sm:grid sm:grid-cols-[1fr_120px_120px_120px_96px] gap-4 items-center px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors duration-200 group animate-in fade-in duration-300" style={{ animationDelay: `${idx * 50}ms` }}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-950 flex items-center justify-center flex-shrink-0 shadow-md">
+                      <Wallet size={14} className="text-green-600 dark:text-green-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{e.source}</p>
+                      {e.notes && <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{e.notes}</p>}
+                    </div>
+                  </div>
+                  <span className="hidden sm:block text-xs text-slate-600 dark:text-slate-400">{format(e.date)}</span>
+                  <div className="hidden sm:flex flex-col items-end">
+                    <span className="text-sm font-bold text-green-600 dark:text-green-400 text-right">{fmt(e.amount, e.currency)}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">{e.currency}</span>
+                  </div>
+                  <div className="hidden sm:flex items-center justify-end gap-1">
+                    <button onClick={() => { setEditing(e); setShowModal(true); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-600 transition-colors duration-200 opacity-0 group-hover:opacity-100">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => handleDelete(e.id)} disabled={deletingId === e.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-500 transition-colors duration-200 disabled:opacity-50 opacity-0 group-hover:opacity-100">
+                      {deletingId === e.id ? <div className="w-3.5 h-3.5 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /> : <Trash2 size={14} />}
+                    </button>
+                  </div>
+                  <div className="sm:hidden ml-auto flex items-center gap-2">
+                    <span className="text-sm font-bold text-green-600">{fmt(e.amount, e.currency)}</span>
+                    <button onClick={() => { setEditing(e); setShowModal(true); }} className="text-slate-400 hover:text-blue-500"><Pencil size={14} /></button>
+                    <button onClick={() => handleDelete(e.id)} disabled={deletingId === e.id} className="text-slate-400 hover:text-red-500"><Trash2 size={14} /></button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

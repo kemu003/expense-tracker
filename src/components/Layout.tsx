@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react';
-import { LayoutDashboard, Receipt, BarChart2, Settings, LogOut, Menu, X, DollarSign, Moon, Sun, Wallet, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Receipt, BarChart2, Settings, LogOut, Menu, X, DollarSign, Moon, Sun, Wallet, TrendingUp, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -112,9 +112,14 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
           >
             <Menu size={22} />
           </button>
-          <h1 className="text-lg font-semibold text-slate-900 dark:text-white capitalize">
-            {navItems.find(n => n.id === currentPage)?.label ?? 'Dashboard'}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold text-slate-900 dark:text-white capitalize">
+              {navItems.find(n => n.id === currentPage)?.label ?? 'Dashboard'}
+            </h1>
+            <span className="hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold border border-blue-200 dark:border-blue-800/50">
+              <Sparkles size={10} /> AI VERSION
+            </span>
+          </div>
           <div className="ml-auto flex items-center gap-3">
             <button
               onClick={toggleDark}
