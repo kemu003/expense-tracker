@@ -46,8 +46,8 @@ export default function ExpenseModal({ expense, onClose, onSave }: ExpenseModalP
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300 max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto custom-scrollbar">
+      <div className="w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 min-h-0 flex-shrink-1 my-auto flex flex-col">
         <div className="flex items-center justify-between px-4 py-4 sm:px-6 sm:py-5 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50 flex-shrink-0">
           <h2 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg">
             {expense ? 'Edit Expense' : 'Add New Expense'}
@@ -57,8 +57,8 @@ export default function ExpenseModal({ expense, onClose, onSave }: ExpenseModalP
           </button>
         </div>
 
-        <div className="overflow-y-auto flex-1 min-h-0 custom-scrollbar">
-          <form id="expense-form" onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <div className="overflow-y-auto overflow-x-hidden flex-1 min-h-0 custom-scrollbar">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-5 pb-[120px]">
           <div>
             <label className="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5 sm:mb-2">What did you spend on?</label>
             <input
@@ -146,19 +146,17 @@ export default function ExpenseModal({ expense, onClose, onSave }: ExpenseModalP
               <p className="text-[11px] sm:text-sm font-medium text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
-        </form>
-        </div>
 
-        <div className="p-4 sm:p-6 border-t border-slate-200 dark:border-slate-800 flex-shrink-0 bg-white dark:bg-slate-900">
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex gap-2 sm:gap-3 pt-4">
             <button type="button" onClick={onClose} className="flex-1 py-2.5 sm:py-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all duration-200">
               Cancel
             </button>
-            <button type="submit" form="expense-form" disabled={loading} className="flex-1 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 text-white text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
+            <button type="submit" disabled={loading} className="flex-1 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 text-white text-xs sm:text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30">
               {loading && <Loader2 size={14} className="animate-spin" />}
               {expense ? 'Update Expense' : 'Add Expense'}
             </button>
           </div>
+        </form>
         </div>
       </div>
     </div>
