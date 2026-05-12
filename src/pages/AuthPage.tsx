@@ -1,15 +1,16 @@
 import { useState, FormEvent } from 'react';
-import { DollarSign, Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
+import { DollarSign, Eye, EyeOff, Loader2, CheckCircle2, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AuthPage() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, demoLogin } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -54,6 +55,21 @@ export default function AuthPage() {
     }
 
     setLoading(false);
+  };
+
+  const handleDemoLogin = async () => {
+    setError('');
+    setSuccess('');
+    setDemoLoading(true);
+
+    const { error } = await demoLogin();
+    if (error) {
+      setError(error);
+    } else {
+      setSuccess('Demo account loaded! Explore with sample data.');
+    }
+
+    setDemoLoading(false);
   };
 
   return (
@@ -162,6 +178,28 @@ export default function AuthPage() {
               {mode === 'login' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
+
+          {/* Demo Login Section */}
+          <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center mb-3">
+              Want to see how SpendWise works?
+            </p>
+            <button
+              onClick={handleDemoLogin}
+              disabled={demoLoading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-60 text-white font-bold transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50"
+            >
+              {demoLoading ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Zap size={18} />
+              )}
+              Try Demo
+            </button>
+            <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-2">
+              Includes sample data • Changes reset on logout
+            </p>
+          </div>
         </div>
 
         <p className="text-center text-slate-400 text-sm mt-8">

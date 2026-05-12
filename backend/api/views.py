@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.models import User
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -11,8 +12,9 @@ import logging
 
 from .models import Expense, Income, Budget
 from .serializers import ExpenseSerializer, IncomeSerializer, BudgetSerializer
-from .permissions import IsOwner
+from .permissions import IsOwner, IsNotDemoUser
 from .services import AnalyticsService
+from .demo import setup_demo_account, DEMO_USER_EMAIL, DEMO_USER_PASSWORD
 
 logger = logging.getLogger('api')
 
@@ -22,7 +24,7 @@ logger = logging.getLogger('api')
 # =========================
 class ExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsOwner, IsNotDemoUser]
 
     def get_queryset(self):
         queryset = Expense.objects.filter(user=self.request.user)
@@ -58,7 +60,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
 # =========================
 class IncomeViewSet(viewsets.ModelViewSet):
     serializer_class = IncomeSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsOwner, IsNotDemoUser]
 
     def get_queryset(self):
         queryset = Income.objects.filter(user=self.request.user)
@@ -89,7 +91,7 @@ class IncomeViewSet(viewsets.ModelViewSet):
 # =========================
 class BudgetViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetSerializer
-    permission_classes = [IsAuthenticated, IsOwner]
+    permission_classes = [IsAuthenticated, IsOwner, IsNotDemoUser]
 
     def get_queryset(self):
         queryset = Budget.objects.filter(user=self.request.user)
@@ -244,3 +246,42 @@ def register(request):
     except Exception as e:
         logger.error(f"Registration Error: {str(e)}", exc_info=True)
         return Response({'error': 'An internal server error occurred.', 'detail': str(e)}, status=500)
+
+
+# =========================
+# DEMO LOGIN
+# =========================
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def demo_login(request):
+    """
+    Demo login endpoint.
+    Sets up demo account with sample data and returns JWT tokens.
+    """
+    try:
+        # Setup or reset demo account with sample data
+        setup_result = setup_demo_account()
+        demo_user = setup_result['user']
+        
+        logger.info(f"Demo account accessed: {demo_user.email}")
+        
+        # Use TokenObtainPairView to get tokens for demo user
+        from rest_framework_simplejwt.tokens import RefreshToken
+        
+        refresh = RefreshToken.for_user(demo_user)
+        
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': {
+                'id': demo_user.id,
+                'email': demo_user.email,
+                'first_name': demo_user.first_name,
+                'is_demo': True,
+            },
+            'message': 'Demo account loaded with sample data. Changes will be reset on logout.',
+        }, status=200)
+        
+    except Exception as e:
+        logger.error(f"Demo Login Error: {str(e)}", exc_info=True)
+        return Response({'error': 'Failed to load demo account', 'detail': str(e)}, status=500)

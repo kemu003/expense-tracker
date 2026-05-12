@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react';
-import { LayoutDashboard, Receipt, BarChart2, Settings, LogOut, Menu, X, DollarSign, Moon, Sun, Wallet, TrendingUp, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Receipt, BarChart2, Settings, LogOut, Menu, X, DollarSign, Moon, Sun, Wallet, TrendingUp, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -19,7 +19,7 @@ const navItems = [
 ];
 
 export default function Layout({ children, currentPage, onNavigate }: LayoutProps) {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isDemo } = useAuth();
   const { dark, toggleDark } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -84,11 +84,18 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         {/* User section */}
         <div className="border-t border-slate-200 dark:border-slate-800 p-4 space-y-3">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-md shadow-blue-600/30">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-md ${
+              isDemo 
+                ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-orange-600/30'
+                : 'bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-600/30'
+            }`}>
               {initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{name}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{name}</p>
+                {isDemo && <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold">DEMO</span>}
+              </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
             </div>
           </div>
@@ -104,6 +111,14 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Demo banner */}
+        {isDemo && (
+          <div className="h-10 bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-center px-4 gap-2 text-sm font-medium">
+            <AlertCircle size={16} />
+            <span>🎮 DEMO MODE - Sample data. Changes will reset on logout.</span>
+          </div>
+        )}
+        
         {/* Top bar */}
         <header className="sticky top-0 z-10 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 flex items-center gap-4 px-4 lg:px-8 shadow-sm">
           <button

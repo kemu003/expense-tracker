@@ -120,6 +120,7 @@ class APIClient {
     localStorage.removeItem('user_email');
     localStorage.removeItem('user_name');
     localStorage.removeItem('user_id');
+    localStorage.removeItem('is_demo');
   }
 
   // Auth endpoints
@@ -165,6 +166,23 @@ class APIClient {
       return response.data;
     } catch (error: any) {
       console.error('❌ Login Error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+      });
+      throw error;
+    }
+  }
+
+  async demoLogin(): Promise<AuthResponse & { user: any }> {
+    console.log('🎮 Starting demo login...');
+    
+    try {
+      const response = await this.axiosInstance.post<AuthResponse & { user: any }>('auth/demo/', {});
+      console.log('✅ Demo Login Response: Tokens received, demo data loaded');
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Demo Login Error:', {
         status: error.response?.status,
         data: error.response?.data,
         message: error.message,
