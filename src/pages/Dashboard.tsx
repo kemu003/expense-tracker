@@ -291,3 +291,4 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
       </div>
     </div>
   );
+}
