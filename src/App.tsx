@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AuthPage from './pages/AuthPage';
@@ -17,6 +17,13 @@ function AppContent() {
   const { user, loading, demoLogin } = useAuth();
   const [page, setPage] = useState('dashboard');
   const [view, setView] = useState<'landing' | 'auth' | 'dashboard'>('landing');
+
+  // Auto-navigate to dashboard when user logs in
+  useEffect(() => {
+    if (user && view !== 'dashboard') {
+      setView('dashboard');
+    }
+  }, [user, view]);
 
   const {
     expenses,
