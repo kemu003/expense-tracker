@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, Calendar, ArrowUpRight, ArrowDownRight, Zap, Sparkles, Lightbulb, AlertCircle, PieChart, Wallet, Target } from 'lucide-react';
 import { Expense, Income, CATEGORY_COLORS, Category } from '../lib/supabase';
 import { format, startOfWeek, startOfMonth } from '../utils/dates';
 import { useDashboardStats } from '../hooks/useDashboard';
 import { useAnalytics } from '../hooks/useAnalytics';
 import { formatCurrency } from '../utils/currency';
+import PeriodFilter from '../components/PeriodFilter';
+import { DatePeriod, filterExpensesByPeriod, filterIncomeByPeriod, calculateTotalExpenses, calculateTotalIncome, getCategoryBreakdown } from '../utils/dateFiltering';
 
 interface DashboardProps {
   expenses: Expense[];
@@ -68,6 +70,7 @@ function fmt(n: number, currency: string = 'KES') {
 }
 
 export default function Dashboard({ expenses, income, onNavigate }: DashboardProps) {
+  const [activePeriod, setActivePeriod] = useState<DatePeriod>('month');
   const { stats: apiStats, loading: statsLoading } = useDashboardStats();
   const { categoryBreakdown, insights, recommendations, monthlySummary, loading: analyticsLoading } = useAnalytics();
 
@@ -75,22 +78,60 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
   const weekStart = startOfWeek();
   const monthStart = startOfMonth();
 
+  // Filter expenses and income based on selected period
+  const filteredExpenses = useMemo(() => {
+    return filterExpensesByPeriod(expenses, activePeriod);
+  }, [expenses, activePeriod]);
+
+  const filteredIncome = useMemo(() => {
+    return filterIncomeByPeriod(income, activePeriod);
+  }, [income, activePeriod]);
+
   // Fallback to local calculations if API fails
   const localStats = useMemo(() => {
-    if (monthlySummary) {
+    const periodExpenses = calculateTotalExpenses(filteredExpenses);
+    const periodIncome = calculateTotalIncome(filteredIncome);
+    const balance = periodIncome - periodExpenses;
+
+    // For display purposes, show breakdown by day/week/month depending on period
+    let todayExp = 0;
+    let weekExp = 0;
+    let monthExp = 0;
+    let monthInc = 0;
+
+    if (activePeriod === 'today') {
+      todayExp = periodExpenses;
+      weekExp = calculateTotalExpenses(expenses.filter(e => e.date >= weekStart));
+      monthExp = calculateTotalExpenses(expenses.filter(e => e.date >= monthStart));
+      monthInc = calculateTotalIncome(income.filter(i => i.date >= monthStart));
+    } else if (activePeriod === 'week') {
+      todayExp = calculateTotalExpenses(expenses.filter(e => e.date === today));
+      weekExp = periodExpenses;
+      monthExp = calculateTotalExpenses(expenses.filter(e => e.date >= monthStart));
+      monthInc = calculateTotalIncome(income.filter(i => i.date >= monthStart));
+    } else if (activePeriod === 'month') {
+      todayExp = calculateTotalExpenses(expenses.filter(e => e.date === today));
+      weekExp = calculateTotalExpenses(expenses.filter(e => e.date >= weekStart));
+      monthExp = periodExpenses;
+      monthInc = periodIncome;
+    } else {
+      // For year or custom, show period totals
+      todayExp = calculateTotalExpenses(expenses.filter(e => e.date === today));
+      weekExp = calculateTotalExpenses(expenses.filter(e => e.date >= weekStart));
+      monthExp = calculateTotalExpenses(expenses.filter(e => e.date >= monthStart));
+      monthInc = periodIncome;
+    }
+
+    if (monthlySummary && activePeriod === 'month') {
       return {
-        today_expenses: (expenses.filter(e => e.date === today).reduce((s, e) => s + parseFloat(e.amount), 0)).toFixed(2),
-        week_expenses: (expenses.filter(e => e.date >= weekStart).reduce((s, e) => s + parseFloat(e.amount), 0)).toFixed(2),
-        month_expenses: monthlySummary.total_expenses.toFixed(2),
+        today_expenses: todayExp.toFixed(2),
+        week_expenses: weekExp.toFixed(2),
+        month_expenses: monthExp.toFixed(2),
         month_income: monthlySummary.total_income.toFixed(2),
-        balance: (monthlySummary.total_income - monthlySummary.total_expenses).toFixed(2)
+        balance: (monthlySummary.total_income - monthExp).toFixed(2)
       };
     }
-    const todayExp = expenses.filter(e => e.date === today).reduce((s, e) => s + parseFloat(e.amount), 0);
-    const weekExp = expenses.filter(e => e.date >= weekStart).reduce((s, e) => s + parseFloat(e.amount), 0);
-    const monthExp = expenses.filter(e => e.date >= monthStart).reduce((s, e) => s + parseFloat(e.amount), 0);
-    const monthInc = income.filter(e => e.date >= monthStart).reduce((s, e) => s + parseFloat(e.amount), 0);
-    const balance = monthInc - monthExp;
+
     return {
       today_expenses: todayExp.toFixed(2),
       week_expenses: weekExp.toFixed(2),
@@ -98,21 +139,20 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
       month_income: monthInc.toFixed(2),
       balance: balance.toFixed(2)
     };
-  }, [expenses, income, today, weekStart, monthStart, monthlySummary]);
+  }, [filteredExpenses, filteredIncome, activePeriod, expenses, income, today, weekStart, monthStart, monthlySummary]);
 
-  const recentExpenses = expenses.slice(0, 10);
+  const recentExpenses = useMemo(() => {
+    return filteredExpenses.slice(0, 10);
+  }, [filteredExpenses]);
 
   const categoryTotals = useMemo(() => {
-    if (categoryBreakdown.length > 0) {
+    if (categoryBreakdown.length > 0 && activePeriod === 'month') {
       return categoryBreakdown.map(item => [item.label, parseFloat(item.value)] as [string, number]);
     }
-    // Fallback to local calculation
-    const map: Record<string, number> = {};
-    expenses.filter(e => e.date >= monthStart).forEach(e => {
-      map[e.category] = (map[e.category] ?? 0) + parseFloat(e.amount);
-    });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [expenses, monthStart, categoryBreakdown]);
+    // Use filtered expenses for category breakdown
+    const categoryMap = getCategoryBreakdown(filteredExpenses);
+    return Object.entries(categoryMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [filteredExpenses, activePeriod, categoryBreakdown]);
 
   const maxCategory = categoryTotals[0]?.[1] ?? 1;
 
@@ -145,24 +185,43 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
         </div>
       </div>
 
+      {/* Period Filter */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-lg">
+        <PeriodFilter activePeriod={activePeriod} onPeriodChange={setActivePeriod} />
+      </div>
+
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <StatCard label="Today" value={fmt(parseFloat(localStats.today_expenses))} icon={Calendar} color="bg-blue-500" sub="expenses today" trend="neutral" />
-        <StatCard label="This Week" value={fmt(parseFloat(localStats.week_expenses))} icon={TrendingDown} color="bg-orange-500" sub="weekly spend" trend="neutral" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 transition-all duration-500">
         <StatCard 
-          label="This Month" 
+          label={activePeriod === 'today' ? 'Today' : 'Daily Average'} 
+          value={fmt(parseFloat(localStats.today_expenses))} 
+          icon={Calendar} 
+          color="bg-blue-500" 
+          sub={activePeriod === 'today' ? 'expenses today' : 'daily spending'} 
+          trend="neutral" 
+        />
+        <StatCard 
+          label={activePeriod === 'week' ? 'This Week' : 'Weekly Total'} 
+          value={fmt(parseFloat(localStats.week_expenses))} 
+          icon={TrendingDown} 
+          color="bg-orange-500" 
+          sub={activePeriod === 'week' ? 'weekly spend' : 'weekly spending'} 
+          trend="neutral" 
+        />
+        <StatCard 
+          label={activePeriod === 'month' ? 'This Month' : 'Period Total'} 
           value={fmt(parseFloat(localStats.month_expenses))} 
           icon={DollarSign} 
           color="bg-red-500" 
-          sub={monthlySummary ? `${monthlySummary.expense_trend.toFixed(1)}% from last month` : "monthly expenses"}
-          trend={monthlySummary?.expense_trend > 0 ? 'up' : monthlySummary?.expense_trend < 0 ? 'down' : 'neutral'} 
+          sub={monthlySummary && activePeriod === 'month' ? `${monthlySummary.expense_trend.toFixed(1)}% from last month` : "period expenses"}
+          trend={monthlySummary && activePeriod === 'month' ? (monthlySummary.expense_trend > 0 ? 'up' : monthlySummary.expense_trend < 0 ? 'down' : 'neutral') : 'neutral'} 
         />
         <StatCard
           label="Balance"
           value={fmt(parseFloat(localStats.balance))}
           icon={TrendingUp}
           color={parseFloat(localStats.balance) >= 0 ? 'bg-green-500' : 'bg-red-500'}
-          sub={`Savings Rate: ${monthlySummary ? Math.round(monthlySummary.savings_rate) : 0}%`}
+          sub={activePeriod === 'month' && monthlySummary ? `Savings Rate: ${Math.round(monthlySummary.savings_rate)}%` : `Period: ${activePeriod}`}
           trend={parseFloat(localStats.balance) >= 0 ? 'up' : 'down'}
         />
       </div>
@@ -183,7 +242,7 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
             <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50">
               <div>
                 <h2 className="font-bold text-slate-900 dark:text-white text-lg">Recent Transactions</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Latest 10 expenses</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Latest 10 for {activePeriod === 'today' ? 'today' : activePeriod === 'week' ? 'this week' : activePeriod === 'month' ? 'this month' : 'this period'}</p>
               </div>
               <button onClick={() => onNavigate('expenses')} className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold hover:underline transition-colors">View all</button>
             </div>
@@ -238,7 +297,7 @@ export default function Dashboard({ expenses, income, onNavigate }: DashboardPro
           <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-800/50">
               <h2 className="font-bold text-slate-900 dark:text-white text-lg">Top Categories</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">This month's spending</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{activePeriod === 'today' ? "Today's spending" : activePeriod === 'week' ? "This week's spending" : activePeriod === 'month' ? "This month's spending" : "Period spending"}</p>
             </div>
             {categoryTotals.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-slate-400 dark:text-slate-500">
