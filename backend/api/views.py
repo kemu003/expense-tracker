@@ -223,7 +223,7 @@ def register(request):
     try:
         email = request.data.get('email')
         password = request.data.get('password')
-        name = request.data.get('name_(H*UK)
+        name = request.data.get('name')
         if not email or not password or not name:
             return Response({'error': 'Email, password, and name are required'}, status=400)
 
