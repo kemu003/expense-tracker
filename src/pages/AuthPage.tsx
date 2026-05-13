@@ -1,8 +1,12 @@
 import { useState, FormEvent } from 'react';
-import { DollarSign, Eye, EyeOff, Loader2, CheckCircle2, Zap } from 'lucide-react';
+import { DollarSign, Eye, EyeOff, Loader2, CheckCircle2, Zap, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function AuthPage() {
+interface AuthPageProps {
+  onBackClick?: () => void;
+}
+
+export default function AuthPage({ onBackClick }: AuthPageProps) {
   const { signIn, signUp, demoLogin } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
@@ -79,6 +83,17 @@ export default function AuthPage() {
       <div className="absolute bottom-20 right-10 w-72 h-72 bg-cyan-500/20 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
 
       <div className="w-full max-w-md relative z-10">
+        {/* Back Button */}
+        {onBackClick && (
+          <button
+            onClick={onBackClick}
+            className="mb-6 flex items-center gap-2 text-slate-300 hover:text-white transition-colors text-sm font-medium group"
+          >
+            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Home
+          </button>
+        )}
+
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 mb-4">

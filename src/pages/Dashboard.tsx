@@ -4,6 +4,7 @@ import { Expense, Income, CATEGORY_COLORS, Category } from '../lib/supabase';
 import { format, startOfWeek, startOfMonth } from '../utils/dates';
 import { useDashboardStats } from '../hooks/useDashboard';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { formatCurrency } from '../utils/currency';
 
 interface DashboardProps {
   expenses: Expense[];
@@ -62,8 +63,8 @@ function InsightItem({ insight }: { insight: any }) {
   );
 }
 
-function fmt(n: number) {
-  return 'KSh ' + n.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmt(n: number, currency: string = 'KES') {
+  return formatCurrency(n, currency);
 }
 
 export default function Dashboard({ expenses, income, onNavigate }: DashboardProps) {

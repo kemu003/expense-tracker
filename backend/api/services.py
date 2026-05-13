@@ -3,6 +3,7 @@ from django.utils import timezone
 from datetime import timedelta, date
 from calendar import monthrange
 from .models import Expense, Income, Budget
+from .demo import DEMO_CURRENCY, DEMO_USER_EMAIL
 
 class CurrencyService:
     # Static exchange rates for "Preparation" phase
@@ -45,18 +46,20 @@ class AnalyticsService:
         prev_month_end = month_start - timedelta(days=1)
         prev_month_start = prev_month_end.replace(day=1)
 
+        demo_filter = {'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {}
+
         # Current Month
-        curr_expenses = Expense.objects.filter(user=user, date__gte=month_start, date__lte=today)
+        curr_expenses = Expense.objects.filter(user=user, date__gte=month_start, date__lte=today, **demo_filter)
         curr_total_exp = AnalyticsService._get_total_in_kes(curr_expenses)
         
-        curr_income = Income.objects.filter(user=user, date__gte=month_start, date__lte=today)
+        curr_income = Income.objects.filter(user=user, date__gte=month_start, date__lte=today, **demo_filter)
         curr_total_inc = AnalyticsService._get_total_in_kes(curr_income)
         
         # Previous Month
-        prev_expenses = Expense.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end)
+        prev_expenses = Expense.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end, **demo_filter)
         prev_total_exp = AnalyticsService._get_total_in_kes(prev_expenses)
         
-        prev_income = Income.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end)
+        prev_income = Income.objects.filter(user=user, date__gte=prev_month_start, date__lte=prev_month_end, **demo_filter)
         prev_total_inc = AnalyticsService._get_total_in_kes(prev_income)
 
         savings = curr_total_inc - curr_total_exp
@@ -97,10 +100,12 @@ class AnalyticsService:
         prev_week_start = this_week_start - timedelta(days=7)
         prev_week_end = this_week_start - timedelta(days=1)
 
-        this_week_qs = Expense.objects.filter(user=user, date__gte=this_week_start)
+        demo_filter = {'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {}
+
+        this_week_qs = Expense.objects.filter(user=user, date__gte=this_week_start, **demo_filter)
         this_week_exp = AnalyticsService._get_total_in_kes(this_week_qs)
 
-        prev_week_qs = Expense.objects.filter(user=user, date__gte=prev_week_start, date__lte=prev_week_end)
+        prev_week_qs = Expense.objects.filter(user=user, date__gte=prev_week_start, date__lte=prev_week_end, **demo_filter)
         prev_week_exp = AnalyticsService._get_total_in_kes(prev_week_qs)
 
         if prev_week_exp > 0:
@@ -120,9 +125,10 @@ class AnalyticsService:
 
         # 2. Budget alerts
         month_start = today.replace(day=1)
+        demo_filter = {'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {}
         budgets = Budget.objects.filter(user=user, month=today.strftime('%Y-%m'))
         for budget in budgets:
-            exp_qs = Expense.objects.filter(user=user, category=budget.category, date__gte=month_start)
+            exp_qs = Expense.objects.filter(user=user, category=budget.category, date__gte=month_start, **demo_filter)
             # Convert expenses to budget's currency for accurate comparison
             exp_sum_kes = AnalyticsService._get_total_in_kes(exp_qs)
             exp_sum = CurrencyService.convert(exp_sum_kes, 'KES', budget.currency)
@@ -148,7 +154,7 @@ class AnalyticsService:
                 })
 
         # 3. Highest category
-        highest_cat = Expense.objects.filter(user=user, date__gte=month_start).values('category').annotate(total=Sum('amount')).order_by('-total').first()
+        highest_cat = Expense.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).values('category').annotate(total=Sum('amount')).order_by('-total').first()
         if highest_cat:
             insights.append({
                 'type': 'info',
@@ -157,8 +163,8 @@ class AnalyticsService:
             })
 
         # 4. Low balance trend
-        curr_total_inc = Income.objects.filter(user=user, date__gte=month_start).aggregate(Sum('amount'))['amount__sum'] or 0
-        curr_total_exp = Expense.objects.filter(user=user, date__gte=month_start).aggregate(Sum('amount'))['amount__sum'] or 0
+        curr_total_inc = Income.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
+        curr_total_exp = Expense.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
         balance = float(curr_total_inc) - float(curr_total_exp)
         if balance < 1000 and curr_total_inc > 0:
             insights.append({
@@ -176,7 +182,7 @@ class AnalyticsService:
         month_start = today.replace(day=1)
 
         # 1. Savings opportunity
-        highest_cat = Expense.objects.filter(user=user, date__gte=month_start).values('category').annotate(total=Sum('amount')).order_by('-total').first()
+        highest_cat = Expense.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).values('category').annotate(total=Sum('amount')).order_by('-total').first()
         if highest_cat:
             potential_saving = float(highest_cat['total']) * 0.1
             recommendations.append({
@@ -186,8 +192,8 @@ class AnalyticsService:
             })
 
         # 2. Weekend spending
-        weekend_exp = Expense.objects.filter(user=user, date__gte=month_start, date__week_day__in=[1, 7]).aggregate(Sum('amount'))['amount__sum'] or 0
-        weekday_exp = Expense.objects.filter(user=user, date__gte=month_start, date__week_day__in=[2, 3, 4, 5, 6]).aggregate(Sum('amount'))['amount__sum'] or 0
+        weekend_exp = Expense.objects.filter(user=user, date__gte=month_start, date__week_day__in=[1, 7], **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
+        weekday_exp = Expense.objects.filter(user=user, date__gte=month_start, date__week_day__in=[2, 3, 4, 5, 6], **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
         
         if float(weekend_exp) > float(weekday_exp) * 0.5:
             recommendations.append({
@@ -197,7 +203,7 @@ class AnalyticsService:
             })
 
         # 3. Frequent small purchases
-        small_purchases = Expense.objects.filter(user=user, date__gte=month_start, amount__lt=500).count()
+        small_purchases = Expense.objects.filter(user=user, date__gte=month_start, amount__lt=500, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).count()
         if small_purchases > 10:
             recommendations.append({
                 'title': "Small Purchases Add Up",

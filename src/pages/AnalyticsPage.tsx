@@ -3,14 +3,15 @@ import { TrendingUp, TrendingDown, PieChart, Wallet, Sparkles, Lightbulb, AlertC
 import { Expense, Income, CATEGORY_COLORS, Category } from '../lib/supabase';
 import { last6Months, monthLabel, startOfMonth } from '../utils/dates';
 import { useAnalytics } from '../hooks/useAnalytics';
+import { formatCurrency } from '../utils/currency';
 
 interface AnalyticsPageProps {
   expenses: Expense[];
   income: Income[];
 }
 
-function fmt(n: number) {
-  return 'KSh ' + n.toLocaleString('en-KE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+function fmt(n: number, currency: string = 'KES') {
+  return formatCurrency(n, currency, true);
 }
 
 function InsightCard({ insight }: { insight: any }) {

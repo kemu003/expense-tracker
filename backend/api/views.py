@@ -14,7 +14,7 @@ from .models import Expense, Income, Budget
 from .serializers import ExpenseSerializer, IncomeSerializer, BudgetSerializer
 from .permissions import IsOwner, IsNotDemoUser
 from .services import AnalyticsService
-from .demo import setup_demo_account, DEMO_USER_EMAIL, DEMO_USER_PASSWORD
+from .demo import setup_demo_account, DEMO_USER_EMAIL, DEMO_USER_PASSWORD, DEMO_CURRENCY
 
 logger = logging.getLogger('api')
 
@@ -119,11 +119,11 @@ class DashboardViewSet(viewsets.ViewSet):
         week_start = today - timedelta(days=today.weekday())
         month_start = today.replace(day=1)
 
-        today_exp = Expense.objects.filter(user=user, date=today).aggregate(Sum('amount'))['amount__sum'] or 0
-        week_exp = Expense.objects.filter(user=user, date__gte=week_start).aggregate(Sum('amount'))['amount__sum'] or 0
-        month_exp = Expense.objects.filter(user=user, date__gte=month_start).aggregate(Sum('amount'))['amount__sum'] or 0
+        today_exp = Expense.objects.filter(user=user, date=today, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
+        week_exp = Expense.objects.filter(user=user, date__gte=week_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
+        month_exp = Expense.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
 
-        month_inc = Income.objects.filter(user=user, date__gte=month_start).aggregate(Sum('amount'))['amount__sum'] or 0
+        month_inc = Income.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
 
         balance = month_inc - month_exp
 
@@ -147,7 +147,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
         user = request.user
         month_start = timezone.now().date().replace(day=1)
 
-        expenses = Expense.objects.filter(user=user, date__gte=month_start)
+        expenses = Expense.objects.filter(user=user, date__gte=month_start, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {}))
         category_totals = expenses.values('category').annotate(total=Sum('amount')).order_by('-total')
 
         # Ensure total is safely calculated, treating None as 0
@@ -186,8 +186,8 @@ class AnalyticsViewSet(viewsets.ViewSet):
             start = date(year, mon, 1)
             end = date(year, mon, monthrange(year, mon)[1])
 
-            exp_sum = Expense.objects.filter(user=user, date__gte=start, date__lte=end).aggregate(Sum('amount'))['amount__sum'] or 0
-            inc_sum = Income.objects.filter(user=user, date__gte=start, date__lte=end).aggregate(Sum('amount'))['amount__sum'] or 0
+            exp_sum = Expense.objects.filter(user=user, date__gte=start, date__lte=end, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
+            inc_sum = Income.objects.filter(user=user, date__gte=start, date__lte=end, **({'currency': DEMO_CURRENCY} if user.email == DEMO_USER_EMAIL else {})).aggregate(Sum('amount'))['amount__sum'] or 0
 
             expense_data.append(float(exp_sum))
             income_data.append(float(inc_sum))
@@ -223,8 +223,7 @@ def register(request):
     try:
         email = request.data.get('email')
         password = request.data.get('password')
-        name = request.data.get('name')
-
+        name = request.data.get('name_(H*UK)
         if not email or not password or not name:
             return Response({'error': 'Email, password, and name are required'}, status=400)
 

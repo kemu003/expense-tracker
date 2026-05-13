@@ -5,14 +5,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { Expense } from '../lib/supabase';
 import { currentMonth, monthLabel } from '../utils/dates';
 import { useBudgets } from '../hooks/useBudgets';
+import { formatCurrency } from '../utils/currency';
 
 interface BudgetsPageProps {
   expenses: Expense[];
 }
 
-function fmt(n: number | string) {
-  const num = typeof n === 'string' ? parseFloat(n) : n;
-  return 'KSh ' + num.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function fmt(n: number | string, currency: string = 'KES') {
+  return formatCurrency(n, currency);
 }
 
 export default function BudgetsPage({ expenses }: BudgetsPageProps) {

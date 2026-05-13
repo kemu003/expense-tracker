@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import AuthPage from './pages/AuthPage';
+import LandingPage from './pages/LandingPage';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import ExpensesPage from './pages/ExpensesPage';
@@ -13,8 +14,9 @@ import { useExpenses } from './hooks/useExpenses';
 import { useIncome } from './hooks/useIncome';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, demoLogin } = useAuth();
   const [page, setPage] = useState('dashboard');
+  const [view, setView] = useState<'landing' | 'auth' | 'dashboard'>('landing');
 
   const {
     expenses,
@@ -43,47 +45,71 @@ function AppContent() {
     );
   }
 
-  if (!user) return <AuthPage />;
+  // If user is logged in, show dashboard
+  if (user && view === 'dashboard') {
+    const renderPage = () => {
+      switch (page) {
+        case 'dashboard':
+          return <Dashboard expenses={expenses} income={income} onNavigate={setPage} />;
+        case 'expenses':
+          return (
+            <ExpensesPage
+              expenses={expenses}
+              loading={expLoading}
+              onAdd={addExpense}
+              onUpdate={updateExpense}
+              onDelete={deleteExpense}
+            />
+          );
+        case 'income':
+          return (
+            <IncomePage
+              income={income}
+              loading={incLoading}
+              onAdd={addIncome}
+              onUpdate={updateIncome}
+              onDelete={deleteIncome}
+            />
+          );
+        case 'analytics':
+          return <AnalyticsPage expenses={expenses} income={income} />;
+        case 'budgets':
+          return <BudgetsPage expenses={expenses} />;
+        case 'settings':
+          return <SettingsPage />;
+        default:
+          return <Dashboard expenses={expenses} income={income} onNavigate={setPage} />;
+      }
+    };
 
-  const renderPage = () => {
-    switch (page) {
-      case 'dashboard':
-        return <Dashboard expenses={expenses} income={income} onNavigate={setPage} />;
-      case 'expenses':
-        return (
-          <ExpensesPage
-            expenses={expenses}
-            loading={expLoading}
-            onAdd={addExpense}
-            onUpdate={updateExpense}
-            onDelete={deleteExpense}
-          />
-        );
-      case 'income':
-        return (
-          <IncomePage
-            income={income}
-            loading={incLoading}
-            onAdd={addIncome}
-            onUpdate={updateIncome}
-            onDelete={deleteIncome}
-          />
-        );
-      case 'analytics':
-        return <AnalyticsPage expenses={expenses} income={income} />;
-      case 'budgets':
-        return <BudgetsPage expenses={expenses} />;
-      case 'settings':
-        return <SettingsPage />;
-      default:
-        return <Dashboard expenses={expenses} income={income} onNavigate={setPage} />;
-    }
-  };
+    return (
+      <Layout currentPage={page} onNavigate={setPage}>
+        {renderPage()}
+      </Layout>
+    );
+  }
 
+  // Show auth page if user clicked sign in and is not authenticated
+  if (view === 'auth') {
+    return <AuthPage onBackClick={() => setView('landing')} />;
+  }
+
+  // Show landing page for unauthenticated users
   return (
-    <Layout currentPage={page} onNavigate={setPage}>
-      {renderPage()}
-    </Layout>
+    <LandingPage
+      onNavigateToAuth={() => setView('auth')}
+      onNavigateToDashboard={async () => {
+        // Try demo login
+        try {
+          const error = await demoLogin();
+          if (!error) {
+            setView('dashboard');
+          }
+        } catch (err) {
+          console.error('Demo login failed:', err);
+        }
+      }}
+    />
   );
 }
 

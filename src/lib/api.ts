@@ -203,6 +203,7 @@ class APIClient {
     category: string;
     date: string;
     notes: string;
+    currency?: string;
   }): Promise<any> {
     const response = await this.axiosInstance.post('expenses/', expense);
     return response.data;
@@ -214,6 +215,7 @@ class APIClient {
     category: string;
     date: string;
     notes: string;
+    currency?: string;
   }>): Promise<any> {
     const response = await this.axiosInstance.patch(`expenses/${id}/`, expense);
     return response.data;
@@ -234,6 +236,7 @@ class APIClient {
     source: string;
     date: string;
     notes: string;
+    currency?: string;
   }): Promise<any> {
     const response = await this.axiosInstance.post('income/', income);
     return response.data;
@@ -244,6 +247,7 @@ class APIClient {
     source: string;
     date: string;
     notes: string;
+    currency?: string;
   }>): Promise<any> {
     const response = await this.axiosInstance.patch(`income/${id}/`, income);
     return response.data;
@@ -263,6 +267,7 @@ class APIClient {
     category: string;
     month: string;
     amount: string;
+    currency?: string;
   }): Promise<any> {
     const response = await this.axiosInstance.post('budgets/', budget);
     return response.data;
@@ -272,6 +277,7 @@ class APIClient {
     category: string;
     month: string;
     amount: string;
+    currency?: string;
   }>): Promise<any> {
     const response = await this.axiosInstance.patch(`budgets/${id}/`, budget);
     return response.data;

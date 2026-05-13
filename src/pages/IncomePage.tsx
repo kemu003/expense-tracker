@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Plus, Trash2, Pencil, Wallet, Calendar, Globe, Loader2 } from 'lucide-react';
-import { Income, CURRENCIES } from '../lib/supabase';
+import { Income } from '../lib/supabase';
 import IncomeModal from '../components/IncomeModal';
 import { format } from '../utils/dates';
+import { formatCurrency } from '../utils/currency';
 
 interface IncomePageProps {
   income: Income[];
@@ -25,11 +26,7 @@ export default function IncomePage({ income, loading, onAdd, onUpdate, onDelete 
     return map;
   }, [income]);
 
-  const fmt = (n: number | string, currency: string = 'KES') => {
-    const symbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? 'KSh';
-    const num = typeof n === 'string' ? parseFloat(n) : n;
-    return `${symbol} ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const fmt = (n: number | string, currency: string = 'KES') => formatCurrency(n, currency);
 
   const handleDelete = async (id: number) => {
     setDeletingId(id);

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Plus, Search, Trash2, Pencil, Filter, Download, ChevronDown, Globe } from 'lucide-react';
-import { Expense, CATEGORIES, Category, CATEGORY_COLORS, CURRENCIES } from '../lib/supabase';
+import { Expense, CATEGORIES, Category, CATEGORY_COLORS } from '../lib/supabase';
 import ExpenseModal from '../components/ExpenseModal';
 import { format } from '../utils/dates';
+import { formatCurrency } from '../utils/currency';
 
 interface ExpensesPageProps {
   expenses: Expense[];
@@ -63,11 +64,7 @@ export default function ExpensesPage({ expenses, loading, onAdd, onUpdate, onDel
     URL.revokeObjectURL(url);
   };
 
-  const fmt = (n: number | string, currency: string = 'KES') => {
-    const symbol = CURRENCIES.find(c => c.code === currency)?.symbol ?? 'KSh';
-    const num = typeof n === 'string' ? parseFloat(n) : n;
-    return `${symbol} ${num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
+  const fmt = (n: number | string, currency: string = 'KES') => formatCurrency(n, currency);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
