@@ -50,15 +50,25 @@ export default function AuthPage({ onBackClick }: AuthPageProps) {
       const { error } = await signUp(email, password, name);
       if (error) {
         setError(error);
+        setLoading(false);
       } else {
-        setSuccess('Account created! You are now logged in.');
+        setSuccess('Account created! You are now logged in. Redirecting...');
+        // The App will auto-redirect when user state updates
       }
     } else {
+      // Login
+      console.log('📝 Submitting login with:', { email: email.trim(), password: '***' });
       const { error } = await signIn(email, password);
-      if (error) setError('Invalid email or password.');
+      if (error) {
+        console.error('❌ Login failed:', error);
+        setError(error || 'Invalid email or password.');
+        setLoading(false);
+      } else {
+        setSuccess('Logged in successfully! Redirecting to dashboard...');
+        console.log('✅ Login successful - waiting for redirect');
+        // The App will auto-redirect when user state updates
+      }
     }
-
-    setLoading(false);
   };
 
   const handleDemoLogin = async () => {

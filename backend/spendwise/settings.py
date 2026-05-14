@@ -168,9 +168,16 @@ SIMPLE_JWT = {
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_HEADERS = ["*"]
 CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+CORS_ALLOWED_ORIGINS = [
+    "https://expense-tracker-z8h7.onrender.com",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://expense-tracker-z8h7.onrender.com",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
 ]
 
 # Logging Configuration

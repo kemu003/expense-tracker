@@ -20,10 +20,12 @@ function AppContent() {
 
   // Auto-navigate to dashboard when user logs in
   useEffect(() => {
-    if (user && view !== 'dashboard') {
+    console.log('📍 View Effect triggered - user:', user?.email, 'view:', view);
+    if (user) {
+      console.log('✅ User detected, changing view to dashboard');
       setView('dashboard');
     }
-  }, [user, view]);
+  }, [user]);  // Only depend on user, not view, to avoid infinite loops
 
   const {
     expenses,

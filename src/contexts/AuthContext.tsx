@@ -45,25 +45,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, name: string) => {
     try {
-      console.log('🔐 Starting registration process...');
+      console.log('🔐 Starting registration process with:', { email: email.trim(), name });
       await apiClient.register(email, password, name);
-      console.log('✅ Registration successful, logging in...');
+      console.log('✅ Registration successful, now logging in...');
       
       // After registration, log them in
       const response = await apiClient.login(email, password);
+      console.log('✅ Login response received after registration');
+      
       localStorage.setItem('access_token', response.access);
       localStorage.setItem('refresh_token', response.refresh);
-      localStorage.setItem('user_email', email);
+      localStorage.setItem('user_email', email.toLowerCase());
       localStorage.setItem('user_name', name);
       localStorage.setItem('user_id', '1');
+      localStorage.setItem('is_demo', 'false');
 
-      setUser({
+      const userData = {
         id: 1,
-        email,
+        email: email.toLowerCase(),
         first_name: name,
-      });
+      };
 
-      console.log('✅ Login successful, user set');
+      console.log('✅ Setting user state after registration:', userData);
+      setUser(userData);
+
+      console.log('✅ Registration and login successful');
       return { error: null };
     } catch (error: any) {
       // Extract error message from axios error response
@@ -83,21 +89,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log('🔐 Starting login process...');
+      console.log('🔐 Starting login process with:', { email: email.trim() });
       const response = await apiClient.login(email, password);
+      console.log('✅ Login API response received:', { 
+        hasAccess: !!response.access, 
+        hasRefresh: !!response.refresh 
+      });
+      
       localStorage.setItem('access_token', response.access);
       localStorage.setItem('refresh_token', response.refresh);
-      localStorage.setItem('user_email', email);
+      localStorage.setItem('user_email', email.toLowerCase());
       localStorage.setItem('user_name', email.split('@')[0]);
       localStorage.setItem('user_id', '1');
+      localStorage.setItem('is_demo', 'false');
 
-      setUser({
+      const userData = {
         id: 1,
-        email,
+        email: email.toLowerCase(),
         first_name: email.split('@')[0],
-      });
+      };
 
-      console.log('✅ Login successful');
+      console.log('✅ Setting user state:', userData);
+      setUser(userData);
+
+      console.log('✅ Login successful - user state updated');
       return { error: null };
     } catch (error: any) {
       const message = error?.response?.data?.error || 
@@ -108,7 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error, 
         message, 
         responseData: error?.response?.data,
-        status: error?.response?.status 
+        status: error?.response?.status,
+        errorKeys: error?.response?.data ? Object.keys(error.response.data) : 'no data'
       });
       return { error: message };
     }

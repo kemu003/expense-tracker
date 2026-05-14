@@ -43,7 +43,8 @@ class APIClient {
       async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Only retry on 401 for non-auth endpoints
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/')) {
           originalRequest._retry = true;
 
           try {
@@ -53,9 +54,10 @@ class APIClient {
             originalRequest.headers.Authorization = `Bearer ${newTokens.access}`;
             return this.axiosInstance(originalRequest);
           } catch (refreshError) {
-            // Refresh failed, clear tokens and redirect to login
+            // Refresh failed, clear tokens and set flag
+            console.error('❌ Token refresh failed, clearing tokens');
             this.clearTokens();
-            window.location.href = '/'; // Redirect to auth page
+            // Don't do hard redirect - let the error bubble up to the app
             return Promise.reject(refreshError);
           }
         }
@@ -71,6 +73,8 @@ class APIClient {
           errorMessage = responseData.error;
         } else if (responseData?.detail) {
           errorMessage = responseData.detail;
+        } else if (responseData?.non_field_errors && Array.isArray(responseData.non_field_errors)) {
+          errorMessage = responseData.non_field_errors[0];
         } else if (typeof responseData === 'object' && Object.keys(responseData).length > 0) {
           // Handle field errors like {"email": ["already exists"]}
           const firstKey = Object.keys(responseData)[0];
@@ -85,6 +89,14 @@ class APIClient {
         (detailedError as any).response = error.response;
         (detailedError as any).status = error.response?.status;
         (detailedError as any).responseData = responseData;
+        
+        console.error('🔴 API Error Response:', {
+          status: error.response?.status,
+          url: error.config?.url,
+          method: error.config?.method,
+          message: errorMessage,
+          responseData,
+        });
         
         return Promise.reject(detailedError);
       }
